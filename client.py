@@ -78,11 +78,11 @@ class client :
         respuesta = int(respuesta)
 
         if(respuesta == 0):
-            window["_SERVER_"].print("s> REGISTER OK")
+            window["_SERVER_"].print("REGISTER OK")
         elif(respuesta == 1):
-            window["_SERVER_"].print("s> USERNAME IN USE")
+            window["_SERVER_"].print("USERNAME IN USE")
         else:
-            window["_SERVER_"].print("s> REGISTER FAIL") 
+            window["_SERVER_"].print("REGISTER FAIL") 
         
         connection.close()
 
@@ -126,11 +126,11 @@ class client :
         respuesta = int(respuesta)
 
         if(respuesta == 0):
-            window["_SERVER_"].print("s> UNREGISTER OK")
+            window["_SERVER_"].print("UNREGISTER OK")
         elif(respuesta == 1):
-            window["_SERVER_"].print("s> USERNAME DOES NOT EXIST")
+            window["_SERVER_"].print("USERNAME DOES NOT EXIST")
         else:
-            window["_SERVER_"].print("s> UNREGISTER FAIL") 
+            window["_SERVER_"].print("UNREGISTER FAIL") 
 
         connection.close()
 
@@ -176,7 +176,7 @@ class client :
         respuesta = int(respuesta)
 
         if(respuesta == 0):
-            window["_SERVER_"].print("s> CONNECT OK")
+            window["_SERVER_"].print("CONNECT OK")
             
             # Creamos un hilo para recibir los mensajes del servidor
             #Para identificar correctamente al hilo lo llamaremos con el alias del usuario, parámetro único que lo identifica
@@ -186,11 +186,11 @@ class client :
 
 
         elif(respuesta == 1):
-            window["_SERVER_"].print("s> CONNECT FAIL, USER DOES NOT EXIST")
+            window["_SERVER_"].print("CONNECT FAIL, USER DOES NOT EXIST")
         elif(respuesta == 2):
-            window["_SERVER_"].print("s> USER ALREADY CONNECTED")
+            window["_SERVER_"].print("USER ALREADY CONNECTED")
         else:
-            window["_SERVER_"].print("s> CONNECT FAIL")
+            window["_SERVER_"].print("CONNECT FAIL")
 
 
         return client.RC.ERROR
@@ -244,11 +244,11 @@ class client :
             #********DESCONECTARSE DEL THEAD********
             
         elif(respuesta == 1):
-            window["_SERVER_"].print("s> DISCONNECT FAIL / USER DOES NOT EXIST")
+            window["_SERVER_"].print("DISCONNECT FAIL / USER DOES NOT EXIST")
         elif(respuesta == 2):
-            window["_SERVER_"].print("s> DISCONNECT FAIL / USER NOT CONNECTED")
+            window["_SERVER_"].print("DISCONNECT FAIL / USER NOT CONNECTED")
         else:
-            window["_SERVER_"].print("s> DISCONNECT FAIL")
+            window["_SERVER_"].print("DISCONNECT FAIL")
 
 
         return client.RC.ERROR
@@ -259,11 +259,11 @@ class client :
     # *
     # * @return OK if the server had successfully delivered the message
     # * @return USER_ERROR if the user is not connected (the message is queued for delivery)
-    # * @return ERROR the user does not window['_SERVER_'].print("s> SEND MESSAGE OK")exist or another error occurred
+    # * @return ERROR the user does not exist or another error occurred
     @staticmethod
     def  send(user, message, window):
-        print("c> SEND " + user + " " + message)
-        
+        window["_SERVER_"].print("c> SEND " + user + " " + message)
+
         # Nos conectamos al servidor
         connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         connection.connect((client._server, client._port))
@@ -274,17 +274,22 @@ class client :
         connection.sendall(mensaje.encode())        # Enviamos el mensaje al servidor
 
         # Enviamos los datos del usuario al servidor
-        # Alias usario
+        # Alias
         mensaje = client._alias
         mensaje = mensaje + "\0"
         connection.sendall(mensaje.encode())
 
-        # Alias destinatario
-        mensaje = user
+        # Usuario destino
+        mensaje = client._alias
         mensaje = mensaje + "\0"
         connection.sendall(mensaje.encode())
 
-        # Mensaje a enviar
+        # Verificamos que el mensaje <= 255 caracteres
+        if(len(message) > 255):
+            window["_SERVER_"].print("s> MESSAGE TOO LONG")
+            return client.RC.ERROR
+        
+        # Mensaje
         mensaje = message
         mensaje = mensaje + "\0"
         connection.sendall(mensaje.encode())
@@ -294,19 +299,16 @@ class client :
         respuesta = int(respuesta)
 
         if(respuesta == 0):
-            # Recibimos el id asociado del mensaje
-            id = client.readString(connection)
-            id = int(id)
-            window["_SERVER_"].print("s> SEND MESSAGE - OK {id}")
+            #identificador del mensaje
+            id_mensaje = client.readString(connection)
+            id_mensaje = int(id_mensaje)
 
+            window["_SERVER_"].print("s> SEND OK - MESSAGE " + id_mensaje)
+            
         elif(respuesta == 1):
             window["_SERVER_"].print("s> SEND FAIL / USER DOES NOT EXIST")
-        elif(respuesta == 2):
-            window["_SERVER_"].print("s> SEND FAIL / USER NOT CONNECTED")
         else:
             window["_SERVER_"].print("s> SEND FAIL")
-
-
 
         return client.RC.ERROR
 
@@ -328,6 +330,8 @@ class client :
 
     @staticmethod
     def  connectedUsers(window):
+        window['_CLIENT_'].print("c> CONNECTEDUSERS")
+
         # Nos conectamos al servidor
         connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         connection.connect((client._server, client._port))
@@ -337,27 +341,28 @@ class client :
         mensaje = mensaje + "\0"
         connection.sendall(mensaje.encode())        # Enviamos el mensaje al servidor
 
-        # Enviamos los datos del usuario al servidor
-        # Alias
-        mensaje = client._alias
-        mensaje = mensaje + "\0"
-        connection.sendall(mensaje.encode())
-
         # Recibimos la respuesta del servidor
         respuesta = client.readString(connection)
         respuesta = int(respuesta)
 
         if(respuesta == 0):
-            window["_SERVER_"].print("DISCONNECT OK")
+            # Recibimos la cantidad de usuarios conectados
+            cantidad = client.readString(connection)
+            cantidad = int(cantidad)
+
+            if(cantidad > 0):
+                usuarios = client.readString(connection)
+                for i in range(cantidad) - 1:
+                    #Recibimos los alias de los usuarios conectados y los vamos guardando en una lista
+                    usuarios = "," +  client.readString(connection)
+
+                window["_SERVER_"].print("s> CONNECTED USERS (" + cantidad + " users connected ) OK - " + usuarios)
             
-            #********DESCONECTARSE DEL THEAD********
-            
-        elif(respuesta == 1):
-            window["_SERVER_"].print("s> DISCONNECT FAIL / USER DOES NOT EXIST")
-        elif(respuesta == 2):
-            window["_SERVER_"].print("s> DISCONNECT FAIL / USER NOT CONNECTED")
-        else:
-            window["_SERVER_"].print("s> DISCONNECT FAIL")
+        elif (respuesta == 1):
+            window["_SERVER_"].print("s> CONNECTED USERS FAIL / USER IS NOT CONNECTED")
+        
+        else: 
+            window["_SERVER_"].print("s> CONNECTED USERS FAIL")
 
         return client.RC.ERROR
 
