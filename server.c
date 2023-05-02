@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include<stdbool.h>
+#include <netinet/in.h>
 
 #include "lines.h"
 #include "implementacion.h"
@@ -234,9 +235,21 @@ void tratar_mensaje(int *cliente){
 			}
 			puerto = atoi(buffer);
 
-			//Conectar al usuario
-			respuesta = conectar(alias, puerto);
+			//Obtenemos la dirección ip del usuario
+			// Dentro de la función tratar_mensaje()
+			struct sockaddr_in client_addr;
+			socklen_t client_addr_len = sizeof(client_addr);
+			if (getpeername(sc, (struct sockaddr*)&client_addr, &client_addr_len) == -1) {
+				printf("s> Error al obtener la dirección IP del cliente al intentar conectar\n");
+				respuesta = -1;
 
+			}else{
+				char ip_cliente[MAX_SIZE] = inet_ntoa(client_addr.sin_addr);
+
+				//Conectar al usuario
+				respuesta = conectar(alias, puerto, ip_cliente);
+			}
+				
 			//Enviamos respuesta al cliente
 			err = sendMessage(sc, respuesta, strlen(respuesta)+1);
 			if (err == -1) {
@@ -334,7 +347,7 @@ void tratar_mensaje(int *cliente){
 
 		default:				//Operacion no válida
 
-			printf("s> Código de operaión no válido\n");
+			printf("s> Código de operación no válido\n");
 			printf("s> Código recibido: %s\n", operacion);
 
 			close(sc);                      // cierra la conexión (sc)
