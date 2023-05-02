@@ -16,6 +16,9 @@
 #define MAX_SIZE 	255
 #define TAM_BUFFER 	1024
 
+#define IP_SERVER "localhost"
+
+
 //VARIABLES GLOBALES
 pthread_mutex_t mutex_mensaje;
 int mensaje_no_copiado = true;
@@ -26,14 +29,18 @@ void tratar_mensaje(int *sc);
 
 int main(int argc, char *argv[]){
 
+	if(argc < 2){
+		perror("La ejecución del programa debe ser: ./server -p <puerto>");
+		return -1;
+	}
+
+	int puerto = atoi(argv[2]);
+
+	printf("s> init server %s:%d\n", IP_SERVER, puerto);
+
     //Atributos de los threads    
 	pthread_attr_t t_attr;		
    	pthread_t thid;
-
-	if (argc < 2) {
-    printf("Uso: %s <puerto>\n", argv[0]);
-    exit(1);
-	}
 
 	int puerto = atoi(argv[1]);		//Puerto de escucha
 
@@ -73,13 +80,13 @@ int main(int argc, char *argv[]){
 
 	err = bind(sd, (const struct sockaddr *)&server_addr,sizeof(server_addr));
 	if (err == -1) {
-		printf("Error en bind\n");
+		printf("s> Error en bind\n");
 		return -1;
 	}
 
     err = listen(sd, SOMAXCONN);
 	if (err == -1) {
-		printf("Error en listen\n");
+		printf("s> Error en listen\n");
 		return -1;
 	}
 
@@ -89,12 +96,12 @@ int main(int argc, char *argv[]){
 	las peticiones que reciba de los clientes
 	*/
 	while (1){
-		printf("Esperando conexion\n");
+		printf("s> Esperando conexion\n");
 		sc = accept(sd, (struct sockaddr *)&client_addr, (socklen_t *)&size);           //Conexión del socket con el cliente
 			
-		printf("Conexión establecida con un cliente\n");
+		printf("s> Conexión establecida con un cliente\n");
         if (sc == -1){
-            printf("Error en accept\n");
+            printf("s> Error en accept\n");
             return -1;
         }
         int *cliente = malloc(sizeof(int));
@@ -121,7 +128,7 @@ void tratar_mensaje(int *cliente){
 	pthread_mutex_lock(&mutex_mensaje);
 
 	int sc = *cliente;
-	int err;              //Variable error
+	int err, respuesta;              //Variable error
 
 	//Recibimos la petición del cliente
 	char buffer[TAM_BUFFER];
@@ -129,8 +136,11 @@ void tratar_mensaje(int *cliente){
 	//Código de operación
 	err = readLine(sc, buffer, TAM_BUFFER+1);
 	if (err == -1) {
-		printf("Error en recepcion\n");
+		printf("s> Error en recepcion\n");
 	}
+
+	char operacion[MAX_SIZE];
+	strcpy(operacion, buffer);
 
 	//Ya se puede despertar al servidor
 	mensaje_no_copiado = false;
@@ -141,32 +151,191 @@ void tratar_mensaje(int *cliente){
 
 	//Comprobamos el tipo de operacion que se quiere realizar
 	pthread_mutex_lock(&mutex_mensaje);
-	switch(mensaje->tipo_op){
+	switch(operacion){
 
 		case "REGISTER":			//Registrarse
 
+			char usuario[MAX_SIZE], alias[MAX_SIZE], fecha[MAX_SIZE];
+
+			//Usuario
+			err = readLine(sc, buffer, TAM_BUFFER+1);
+			if (err == -1) {
+				printf("s> Error en recepcion\n");
+			}
+			strcpy(usuario, buffer);
+
+			//Alias
+			err = readLine(sc, buffer, TAM_BUFFER+1);
+			if (err == -1) {
+				printf("s> Error en recepcion\n");
+			}
+			strcpy(alias, buffer);
+
+			//Fecha
+			err = readLine(sc, buffer, TAM_BUFFER+1);
+			if (err == -1) {
+				printf("s> Error en recepcion\n");
+			}
+			strcpy(fecha, buffer);
+
+			//Registrar usuario
+			respuesta = registrar(usuario, alias, fecha);
+			
+			//Enviamos respuesta al cliente
+			err = sendMessage(sc, respuesta, strlen(respuesta)+1);
+			if (err == -1) {
+				printf("s> Error en el envío de la respuesta al cliente\n");
+			}
+
+			close(sc);
+			
+			break;
+
         case "UNREGISTER":			//Baja del sistema
+
+			char alias[MAX_SIZE];
+
+			//Alias
+			err = readLine(sc, buffer, TAM_BUFFER+1);
+			if (err == -1) {
+				printf("s> Error en recepcion\n");
+			}
+			strcpy(alias, buffer);
+
+			//Dar de baja al usuario
+			respuesta = baja(alias);
+
+			//Enviamos respuesta al cliente
+			err = sendMessage(sc, respuesta, strlen(respuesta)+1);
+			if (err == -1) {
+				printf("s> Error en el envío de la respuesta al cliente\n");
+			}	
+
+			close(sc);
+			
+			break;
         
         case "CONNECT":				//Conectar con otro usuario
 
+			char alias[MAX_SIZE];
+			int puerto;
+
+			//Alias
+			err = readLine(sc, buffer, TAM_BUFFER+1);
+			if (err == -1) {
+				printf("s> Error en recepcion\n");
+			}
+			strcpy(alias, buffer);
+
+			//Puerto
+			err = readLine(sc, buffer, TAM_BUFFER+1);
+			if (err == -1) {
+				printf("s> Error en recepcion\n");
+			}
+			puerto = atoi(buffer);
+
+			//Conectar al usuario
+			respuesta = conectar(alias, puerto);
+
+			//Enviamos respuesta al cliente
+			err = sendMessage(sc, respuesta, strlen(respuesta)+1);
+			if (err == -1) {
+				printf("s> Error en el envío de la respuesta al cliente\n");
+			}
+
+			close(sc);
+			
+			break;
+
         case "DISCONNECT":			//Desconectar de otro usuario
 
-        case "SEND":
+			char alias[MAX_SIZE];
 
-        case "CONNECTEDUSERS":
-			
-
-		default:
-			perror("Error al tratar la peticion");
-			mensaje->key = -1;
-
-			//Enviar mensaje al cliente
-			//Key
-			sprintf(buffer, "%d", mensaje->key);
-			err = sendMessage(sc, buffer, strlen(buffer)+1);
+			//Alias
+			err = readLine(sc, buffer, TAM_BUFFER+1);
 			if (err == -1) {
-					printf("Error en envío\n");
+				printf("s> Error en recepcion\n");
 			}
+			strcpy(alias, buffer);
+
+			//Desconectar al usuario
+			respuesta = desconectar(alias);
+
+			//Enviamos respuesta al cliente
+			err = sendMessage(sc, respuesta, strlen(respuesta)+1);
+			if (err == -1) {
+				printf("s> Error en el envío de la respuesta al cliente\n");
+			}
+
+			close(sc);
+			
+			break;
+
+        case "SEND":				//Enviar mensaje a otro usuario
+
+			char alias[MAX_SIZE], destino[MAX_SIZE], mensaje[MAX_SIZE];
+
+			//Alias
+			err = readLine(sc, buffer, TAM_BUFFER+1);
+			if (err == -1) {
+				printf("s> Error en recepcion\n");
+			}
+			strcpy(alias, buffer);
+
+			//Usuario destino
+			err = readLine(sc, buffer, TAM_BUFFER+1);
+			if (err == -1) {
+				printf("s> Error en recepcion\n");
+			}
+			strcpy(destino, buffer);
+
+			//Mensaje
+			err = readLine(sc, buffer, TAM_BUFFER+1);
+			if (err == -1) {
+				printf("s> Error en recepcion\n");
+			}
+			strcpy(mensaje, buffer);
+
+			int *id_mens = (int*)malloc(sizeof(int))
+
+			//Enviar mensaje
+			respuesta = enviar(alias, destino, mensaje, id_mens);
+
+			//Enviamos respuesta al cliente
+			err = sendMessage(sc, respuesta, strlen(respuesta)+1);
+			if (err == -1) {
+				printf("s> Error en el envío de la respuesta al cliente\n");
+			}
+
+			if(respuesta == 0){
+				err = sendMessage(sc, id_mens, sizeof(int));
+				if (err == -1) {
+					printf("s> Error en el envío del id del mensaje al cliente\n");
+				}
+			}
+
+			free(id_mens);
+
+			close(sc);
+			
+			break;
+
+        case "CONNECTEDUSERS":		//Lista de usuarios conectados
+
+			respuesta = usuarios_conectados(sc);
+
+			if(respuesta = -1){
+				printf("s> Error en la función usuarios_conectados\n");
+			}
+
+			close(sc);
+			
+			break;
+
+		default:				//Operacion no válida
+
+			printf("s> Código de operaión no válido\n");
+			printf("s> Código recibido: %s\n", operacion);
 
 			close(sc);                      // cierra la conexión (sc)
 

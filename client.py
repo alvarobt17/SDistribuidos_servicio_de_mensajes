@@ -105,19 +105,9 @@ class client :
         mensaje = mensaje + "\0"
         connection.sendall(mensaje.encode())        # Enviamos el mensaje al servidor
 
-        # Enviamos los datos del usuario al servidor
-        # Usuario
-        mensaje = client._username
-        mensaje = mensaje + "\0"
-        connection.sendall(mensaje.encode())  
-
+        # Enviamos los datos necesarios al servidor 
         # Alias
         mensaje = client._alias
-        mensaje = mensaje + "\0"
-        connection.sendall(mensaje.encode())
-
-        # Fecha
-        mensaje = client._date
         mensaje = mensaje + "\0"
         connection.sendall(mensaje.encode())
 
@@ -285,7 +275,7 @@ class client :
         connection.sendall(mensaje.encode())
 
         # Verificamos que el mensaje <= 255 caracteres
-        if(len(message) > 255):
+        if(len(message) >= 255):
             window["_SERVER_"].print("s> MESSAGE TOO LONG")
             return client.RC.ERROR
         
