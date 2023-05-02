@@ -95,7 +95,7 @@ int conectar(char alias[MAX_SIZE], int puerto, char ip[MAX_SIZE]){
     // Leemos la 5 línea para ver la ip del usuario
     
 
-
+    //PROBAR PRIMERO EN UN ARCHIVO
 
 
 
