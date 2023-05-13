@@ -26,6 +26,8 @@ class client :
     _alias = None
     _date = None
 
+    estado_thread = 1
+
     # ******************** METHODS *******************
     # *
     # * @param socket - socket to read from 
@@ -150,13 +152,11 @@ class client :
         mensaje = mensaje + "\0"
         connection.sendall(mensaje.encode())
 
-        #Buscamos un puerto libre para el cliente
-        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
-            s.bind(("", 0))
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            free_port = s.getsockname()[1]
+        # Creamos un socket para el thread con el primer puerto libre
+        socket_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        socket_client.bind(('', 0))  # Especifica una dirección IP vacía (localhost) y un puerto 0 para obtener un puerto disponible automáticamente
+        client._port = socket_client.getsockname()[1]
 
-        client._port = free_port
         mensaje = str(client._port)
         mensaje = mensaje + "\0"
         connection.sendall(mensaje.encode())
@@ -173,6 +173,7 @@ class client :
             nombre_hilo = client._alias + "_thread"
 
             #********CONECTARSE AL THEAD********
+            thread = threading.Thread(target=client.receiveMessages, args=(connection, window), name=nombre_hilo)
 
 
         elif(respuesta == 1):
@@ -192,7 +193,8 @@ class client :
     """
     @staticmethod
     def receiveMessages(connection, window):
-        while True: 
+        estado_thread = 1
+        while estado_thread: 
             # Recibimos el mensaje del servidor
             mensaje = client.readString(connection)
             mensaje = mensaje.split("\0")
@@ -232,6 +234,13 @@ class client :
             window["_SERVER_"].print("DISCONNECT OK")
             
             #********DESCONECTARSE DEL THEAD********
+            nombre_hilo = client._alias + "_thread"
+            # Paramos el thread (join)
+            estado_thread = 0
+            #thread.join()
+
+
+
             
         elif(respuesta == 1):
             window["_SERVER_"].print("DISCONNECT FAIL / USER DOES NOT EXIST")

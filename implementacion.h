@@ -15,6 +15,8 @@ int enviar(char alias[MAX_SIZE], char mensaje[MAX_SIZE]);
 
 int usuarios_conectados(int sc);
 
+int mensajes_pendientes(char alias[MAX_SIZE], int puerto, char ip[MAX_SIZE]);
+
 
 
 #endif // __IMPLEMENTACION_H__
