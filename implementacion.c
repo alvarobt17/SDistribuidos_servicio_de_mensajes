@@ -91,6 +91,45 @@ int conectar(char alias[MAX_SIZE], int puerto, char ip[MAX_SIZE]){
 
     fclose(fichero);
 
+    // INCLUIMOS AL USUARIO EN CONNECTED_USERS
+
+    sprintf(nombre_fichero, "connected_users.txt");
+
+    fichero = fopen(nombre_fichero, "r+");
+    if(fichero == NULL){
+        // Escribimos en la primera línea 0, número usuarios conectados
+        fprintf(fichero, "%d\n", 0);
+    }
+
+    // Leemos la primera línea para ver el número de usuarios conectados
+    fseek(fichero, 0, SEEK_SET);
+    if(fgets(buffer, TAM_BUFFER, fichero) == NULL){
+        // Error al leer el fichero
+        fclose(fichero);
+        return 1;
+    }
+
+    int conectado = atoi(buffer);
+
+    conectado++;
+
+    // Modificamos los usuarios conectados
+    fseek(fichero, 0, SEEK_SET);
+    fprintf(fichero, "%d", conectado);
+
+    for(int i = 0; i < conectado; i++){
+        if(fgets(buffer, TAM_BUFFER, fichero) == NULL){
+            // Error al leer el fichero
+            fclose(fichero);
+            return 1;
+        }
+    }
+
+    // Escribimos el nombre del usuario
+    fprintf(fichero, "%s\n", alias);
+
+    fclose(fichero);
+
     return 0;
 
 }
@@ -126,11 +165,73 @@ int desconectar(char alias[MAX_SIZE]){
         return 2;           // USER NOT CONNECTED
     }
 
-    // Cambiamos el estado del usuario a Dconectado y borramos el puerto y la ip
+    // Cambiamos el estado del usuario a desconectado y borramos el puerto y la ip
     fseek(fichero, -2, SEEK_CUR);
     fprintf(fichero, "%d\n%s\n%s", 0, "NULL", "NULL");
 
     fclose(fichero);
+
+    // ELIMINAR AL USUARIO DE CONNECTED_USERS
+
+    sprintf(nombre_fichero, "connected_users.txt");
+
+    fichero = fopen(nombre_fichero, "r+");
+    if(fichero == NULL){
+        // Escribimos en la primera línea 0, número usuarios conectados
+        fprintf(fichero, "%d\n", 0);
+        printf("Fichero vacío\n");
+    }
+
+    // Leemos la primera línea para ver el número de usuarios conectados
+    fseek(fichero, 0, SEEK_SET);
+    if(fgets(buffer, TAM_BUFFER, fichero) == NULL){
+        // Error al leer el fichero
+        fclose(fichero);
+        return 1;
+    }
+
+    printf("Usuarios conectados: %s\n", buffer);
+    int conectado = atoi(buffer);
+
+    if(conectado > 0){
+        // Creamos un nuevo fichero para ir copiando todos los usuarios menos el que queremos desconectar
+        FILE *fichero_aux;
+        char nombre_fichero_aux[MAX_SIZE];
+        sprintf(nombre_fichero_aux, "connected_users_aux.txt");
+
+        fichero_aux = fopen(nombre_fichero_aux, "w");
+
+        // Copiamos el número de usuarios conectados
+        fprintf(fichero_aux, "%d\n", conectado-1);
+
+        for(int i = 0; i < conectado; i++){
+            if(fgets(buffer, TAM_BUFFER, fichero) == NULL){
+                // Error al leer el fichero
+                fclose(fichero);
+                return 1;
+            }
+
+            int cmp = strncmp(buffer, alias, strlen(alias));
+            if( cmp != 0){  // Si el usuario está conectado no lo incluimos en el nuevo fichero
+                fprintf(fichero_aux, "%s", buffer);
+            }
+        }
+
+        fclose(fichero);
+        fclose(fichero_aux);
+
+        // Borramos el fichero original
+        remove(nombre_fichero);
+
+        // Renombramos el fichero auxiliar
+        rename(nombre_fichero_aux, nombre_fichero);
+
+    }else{
+        fclose(fichero);
+    }
+
+    return 0;
+
 }
 
 int enviar(char alias[MAX_SIZE], char mensaje[MAX_SIZE]){
