@@ -69,7 +69,6 @@ int conectar(char alias[MAX_SIZE], int puerto, char ip[MAX_SIZE]){
 
     // Leemos la 4 línea para ver el estado del usuario
     char buffer[TAM_BUFFER];
-    int contandor = 1;
     for(int i = 0; i < 4; i++){
         if(fgets(buffer, TAM_BUFFER, fichero) == NULL){
             // Error al leer el fichero
@@ -79,8 +78,8 @@ int conectar(char alias[MAX_SIZE], int puerto, char ip[MAX_SIZE]){
     }
     
     // Comprobamos que el usuario no esté ya conectado
-    int cont = atoi(buffer);
-    if(cont == 1){
+    int conect = atoi(buffer);
+    if(conect == 1){
         // El usuario ya está conectado
         fclose(fichero);
         return 2;           // USER ALREADY CONNECTED
@@ -182,7 +181,50 @@ int enviar(char alias[MAX_SIZE], char mensaje[MAX_SIZE]){
 
 }
 
-int usuarios_conectados(int sc);
+int usuarios_conectados(int sc){
+   
+    FILE *fichero;
+    char nombre_fichero[MAX_SIZE];
+    sprintf(nombre_fichero, "connected_users.txt");
+
+    fichero = fopen(nombre_fichero, "r");
+    if (fichero == NULL) {
+        printf("No se pudo abrir el fichero.\n");
+        return -1;
+    }
+
+    char buffer[TAM_BUFFER];
+    fgets(buffer, TAM_BUFFER, fichero);
+
+    int num_connect = atoi(buffer);
+
+    if (num_connect <= 0) {
+        fclose(fichero);
+        return -1;
+    }
+
+    // Enviamos la cantidad de personas conectadas al cliente
+    if(send(sc, &num_connect, sizeof(int), 0) == -1){
+        printf("s> Error al enviar el número de personas conectadas");
+        fclose(fichero);
+        return -1;
+    }
+
+    while (fgets(buffer, TAM_BUFFER, fichero) != NULL) {
+        if (strcmp(buffer, "") != 0) {
+            err = sendMessage(sc, buffer, strlen(buffer)+1);
+            if( err == -1){
+                printf("s> Error al enviar el número de mensajes");
+                return -1;
+            }
+        }
+    }
+
+    fclose(fichero);
+
+    return 0;
+
+}
 
 int mensajes_pendientes(char alias[MAX_SIZE], int puerto, char ip[MAX_SIZE]){       // NO PROBADA
     FILE *fichero;
@@ -216,10 +258,10 @@ int mensajes_pendientes(char alias[MAX_SIZE], int puerto, char ip[MAX_SIZE]){   
 
     // Leemos el fichero y enviamos los mensajes
     char buffer[TAM_BUFFER];
-    int contandor = 0;
+    int contador = 0;
     while(fgets(buffer, TAM_BUFFER, fichero) != NULL){
-        if(buffer != ""){
-            contandor ++;
+        if(strcmp(buffer, "") != 0){
+            contador ++;
         }
     }
     
@@ -236,7 +278,7 @@ int mensajes_pendientes(char alias[MAX_SIZE], int puerto, char ip[MAX_SIZE]){   
     // Enviamos los mensajes
     fseek(fichero, 0, SEEK_SET);
     while(fgets(buffer, TAM_BUFFER, fichero) != NULL){
-        if(buffer != ""){
+        if(!strcmp(buffer, "")){
             err = sendMessage(sc, buffer, strlen(buffer)+1);
             if( err == -1){
                 printf("s> Error al enviar el número de mensajes");
