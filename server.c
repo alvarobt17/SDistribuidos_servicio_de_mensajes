@@ -19,6 +19,8 @@
 
 #define IP_SERVER "localhost"
 
+int id_mensaje;
+
 
 //VARIABLES GLOBALES
 pthread_mutex_t mutex_mensaje;
@@ -181,6 +183,13 @@ void tratar_mensaje(int *cliente){
 
 			//Registrar usuario
 			respuesta = registrar(usuario, alias, fecha);
+
+			// Mostramos por la consola del servidor el resultado de la operación
+			if(respuesta == 0){
+				printf("s> REGISTER %s OK\n", alias);
+			}else{
+				printf("s> REGISTER %s FAIL\n", alias);
+			}
 			
 			//Enviamos respuesta al cliente
 			err = sendMessage(sc, respuesta, strlen(respuesta)+1);
@@ -205,6 +214,12 @@ void tratar_mensaje(int *cliente){
 
 			//Dar de baja al usuario
 			respuesta = baja(alias);
+
+			if(respuesta == 0){
+				printf("s> UNREGISTER %s OK\n", alias);
+			}else{
+				printf("s> UNREGISTER %s FAIL\n", alias);
+			}
 
 			//Enviamos respuesta al cliente
 			err = sendMessage(sc, respuesta, strlen(respuesta)+1);
@@ -236,20 +251,30 @@ void tratar_mensaje(int *cliente){
 			puerto = atoi(buffer);
 
 			//Obtenemos la dirección ip del usuario
-			// Dentro de la función tratar_mensaje()
 			struct sockaddr_in client_addr;
 			socklen_t client_addr_len = sizeof(client_addr);
 			if (getpeername(sc, (struct sockaddr*)&client_addr, &client_addr_len) == -1) {
 				printf("s> Error al obtener la dirección IP del cliente al intentar conectar\n");
 				respuesta = -1;
 
-			}else{
-				char ip_cliente[MAX_SIZE] = inet_ntoa(client_addr.sin_addr);
+				//Enviamos respuesta al cliente
+				err = sendMessage(sc, respuesta, strlen(respuesta)+1);
+				if (err == -1) {
+					printf("s> Error en el envío de la respuesta al cliente\n");
+				}
 
-				//Conectar al usuario
-				respuesta = conectar(alias, puerto, ip_cliente);
 			}
-				
+
+			char ip_cliente[MAX_SIZE] = inet_ntoa(client_addr.sin_addr);
+
+			//Conectar al usuario
+			respuesta = conectar(alias, puerto, ip_cliente);
+
+			if(respuesta == 0){
+				printf("s> CONNECT %s OK\n", alias);
+			}else{
+				printf("s> CONNECT %s FAIL\n", alias);
+			}
 			//Enviamos respuesta al cliente
 			err = sendMessage(sc, respuesta, strlen(respuesta)+1);
 			if (err == -1) {
@@ -258,7 +283,7 @@ void tratar_mensaje(int *cliente){
 
 			if(respuesta == 0){
 				// Enviamos los mensajes pendientes si hay
-				if (mensajes_pendientes(alias, puerto, ip) == -1) {
+				if (mensajes_pendientes(alias, puerto, ip_cliente) == -1) {
 					printf("s> Error al enviar los mensajes pendientes\n");
 				}
 			}
@@ -280,6 +305,12 @@ void tratar_mensaje(int *cliente){
 
 			//Desconectar al usuario
 			respuesta = desconectar(alias);
+
+			if(respuesta == 0){
+				printf("s> DISCONNECT %s OK\n", alias);
+			}else{
+				printf("s> DISCONNECT %s FAIL\n", alias);
+			}
 
 			//Enviamos respuesta al cliente
 			err = sendMessage(sc, respuesta, strlen(respuesta)+1);
@@ -316,10 +347,11 @@ void tratar_mensaje(int *cliente){
 			}
 			strcpy(mensaje, buffer);
 
-			int *id_mens = (int*)malloc(sizeof(int))
+			id_mensaje++;		//Incrementamos el id del mensaje
+			int id_local = id_mensaje;
 
 			//Enviar mensaje
-			respuesta = enviar(alias, destino, mensaje, id_mens);
+			respuesta = enviar(alias, destino, mensaje, id_local);
 
 			//Enviamos respuesta al cliente
 			err = sendMessage(sc, respuesta, strlen(respuesta)+1);
@@ -328,13 +360,11 @@ void tratar_mensaje(int *cliente){
 			}
 
 			if(respuesta == 0){
-				err = sendMessage(sc, id_mens, sizeof(int));
+				err = sendMessage(sc, id_local, sizeof(int));
 				if (err == -1) {
 					printf("s> Error en el envío del id del mensaje al cliente\n");
 				}
 			}
-
-			free(id_mens);
 
 			close(sc);
 			
@@ -344,8 +374,12 @@ void tratar_mensaje(int *cliente){
 
 			respuesta = usuarios_conectados(sc);
 
-			if(respuesta = -1){
-				printf("s> Error en la función usuarios_conectados\n");
+
+			if(respuesta = 0){
+				printf("s> CONNECTEDUSERS OK\n");
+				
+			}else{
+				printf("s> CONNECTEDUSERS FAIL\n");
 			}
 
 			close(sc);

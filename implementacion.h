@@ -11,7 +11,7 @@ int conectar(char alias[MAX_SIZE], int puerto, char ip[MAX_SIZE]);
 
 int desconectar(char alias[MAX_SIZE]);
 
-int enviar(char alias[MAX_SIZE], char mensaje[MAX_SIZE]);
+int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE], int id);
 
 int usuarios_conectados(int sc);
 
