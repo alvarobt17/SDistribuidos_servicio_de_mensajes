@@ -13,6 +13,8 @@ int desconectar(char alias[MAX_SIZE]);
 
 int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE], int id);
 
+int error_enviar_mensaje(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE], int id);
+
 int usuarios_conectados(int sc);
 
 int mensajes_pendientes(char alias[MAX_SIZE], int puerto, char ip[MAX_SIZE]);

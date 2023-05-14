@@ -9,11 +9,12 @@
 #include <pthread.h>
 #include<stdbool.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+
 
 #include "lines.h"
 #include "implementacion.h"
 
-#define MAX_LINE 	256
 #define MAX_SIZE 	255
 #define TAM_BUFFER 	1024
 
@@ -37,15 +38,13 @@ int main(int argc, char *argv[]){
 		return -1;
 	}
 
-	int puerto = atoi(argv[2]);
+	int puerto = atoi(argv[2]);		//Puerto de escucha del servidor
 
 	printf("s> init server %s:%d\n", IP_SERVER, puerto);
 
     //Atributos de los threads    
 	pthread_attr_t t_attr;		
    	pthread_t thid;
-
-	int puerto = atoi(argv[1]);		//Puerto de escucha
 
     int err;                //Variable error
 
@@ -154,11 +153,30 @@ void tratar_mensaje(int *cliente){
 
 	//Comprobamos el tipo de operacion que se quiere realizar
 	pthread_mutex_lock(&mutex_mensaje);
-	switch(operacion){
 
-		case "REGISTER":			//Registrarse
+	int tipo_op;
 
-			char usuario[MAX_SIZE], alias[MAX_SIZE], fecha[MAX_SIZE];
+	if(strcmp(operacion, "REGISTER") == 0){
+		tipo_op = 0;
+	}else if(strcmp(operacion, "UNREGISTERED") == 0){
+		tipo_op = 1;
+	}else if(strcmp(operacion, "CONNECT") == 0){
+		tipo_op = 2;
+	}else if(strcmp(operacion, "DISCONNECT") == 0){
+		tipo_op = 3;
+	}else if(strcmp(operacion, "SEND") == 0){
+		tipo_op = 4;
+	}else if(strcmp(operacion, "CONNECTEDUSERS") == 0){
+		tipo_op = 5;
+	}else{
+		tipo_op = -1;
+	}
+
+	char usuario[MAX_SIZE], alias[MAX_SIZE], fecha[MAX_SIZE], str_respuesta[MAX_SIZE], destino[MAX_SIZE], mensaje[MAX_SIZE];
+
+	switch(tipo_op){
+
+		case 0:			//Registrarse
 
 			//Usuario
 			err = readLine(sc, buffer, TAM_BUFFER+1);
@@ -190,9 +208,10 @@ void tratar_mensaje(int *cliente){
 			}else{
 				printf("s> REGISTER %s FAIL\n", alias);
 			}
-			
+		
+			sprintf(str_respuesta, "%d", respuesta);
 			//Enviamos respuesta al cliente
-			err = sendMessage(sc, respuesta, strlen(respuesta)+1);
+			err = sendMessage(sc, str_respuesta, strlen(str_respuesta)+1);
 			if (err == -1) {
 				printf("s> Error en el envío de la respuesta al cliente\n");
 			}
@@ -201,9 +220,7 @@ void tratar_mensaje(int *cliente){
 			
 			break;
 
-        case "UNREGISTER":			//Baja del sistema
-
-			char alias[MAX_SIZE];
+        case 1:			//Baja del sistema
 
 			//Alias
 			err = readLine(sc, buffer, TAM_BUFFER+1);
@@ -222,7 +239,7 @@ void tratar_mensaje(int *cliente){
 			}
 
 			//Enviamos respuesta al cliente
-			err = sendMessage(sc, respuesta, strlen(respuesta)+1);
+			err = sendMessage(sc, str_respuesta, strlen(str_respuesta)+1);
 			if (err == -1) {
 				printf("s> Error en el envío de la respuesta al cliente\n");
 			}	
@@ -231,9 +248,7 @@ void tratar_mensaje(int *cliente){
 			
 			break;
         
-        case "CONNECT":				//Conectar con otro usuario
-
-			char alias[MAX_SIZE];
+        case 2:				//Conectar con otro usuario
 			int puerto;
 
 			//Alias
@@ -258,14 +273,16 @@ void tratar_mensaje(int *cliente){
 				respuesta = -1;
 
 				//Enviamos respuesta al cliente
-				err = sendMessage(sc, respuesta, strlen(respuesta)+1);
+				sprintf(str_respuesta, "%d", respuesta);
+				err = sendMessage(sc, str_respuesta, strlen(str_respuesta)+1);
 				if (err == -1) {
 					printf("s> Error en el envío de la respuesta al cliente\n");
 				}
 
 			}
 
-			char ip_cliente[MAX_SIZE] = inet_ntoa(client_addr.sin_addr);
+			char ip_cliente[MAX_SIZE];
+			inet_ntop(AF_INET, &(client_addr.sin_addr), ip_cliente, MAX_SIZE);
 
 			//Conectar al usuario
 			respuesta = conectar(alias, puerto, ip_cliente);
@@ -276,7 +293,8 @@ void tratar_mensaje(int *cliente){
 				printf("s> CONNECT %s FAIL\n", alias);
 			}
 			//Enviamos respuesta al cliente
-			err = sendMessage(sc, respuesta, strlen(respuesta)+1);
+			sprintf(str_respuesta, "%d", respuesta);
+			err = sendMessage(sc, str_respuesta, strlen(str_respuesta)+1);
 			if (err == -1) {
 				printf("s> Error en el envío de la respuesta al cliente\n");
 			}
@@ -292,9 +310,7 @@ void tratar_mensaje(int *cliente){
 			
 			break;
 
-        case "DISCONNECT":			//Desconectar de otro usuario
-
-			char alias[MAX_SIZE];
+        case 3:			//Desconectar de otro usuario
 
 			//Alias
 			err = readLine(sc, buffer, TAM_BUFFER+1);
@@ -313,7 +329,8 @@ void tratar_mensaje(int *cliente){
 			}
 
 			//Enviamos respuesta al cliente
-			err = sendMessage(sc, respuesta, strlen(respuesta)+1);
+			sprintf(str_respuesta, "%d", respuesta);
+			err = sendMessage(sc, str_respuesta, strlen(str_respuesta)+1);
 			if (err == -1) {
 				printf("s> Error en el envío de la respuesta al cliente\n");
 			}
@@ -322,9 +339,7 @@ void tratar_mensaje(int *cliente){
 			
 			break;
 
-        case "SEND":				//Enviar mensaje a otro usuario
-
-			char alias[MAX_SIZE], destino[MAX_SIZE], mensaje[MAX_SIZE];
+        case 4:				//Enviar mensaje a otro usuario
 
 			//Alias
 			err = readLine(sc, buffer, TAM_BUFFER+1);
@@ -354,13 +369,15 @@ void tratar_mensaje(int *cliente){
 			respuesta = enviar(alias, destino, mensaje, id_local);
 
 			//Enviamos respuesta al cliente
-			err = sendMessage(sc, respuesta, strlen(respuesta)+1);
+			sprintf(str_respuesta, "%d", respuesta);
+			err = sendMessage(sc, str_respuesta, strlen(str_respuesta)+1);
 			if (err == -1) {
 				printf("s> Error en el envío de la respuesta al cliente\n");
 			}
 
 			if(respuesta == 0){
-				err = sendMessage(sc, id_local, sizeof(int));
+				sprintf(str_respuesta, "%d", id_local);
+				err = sendMessage(sc, str_respuesta, sizeof(str_respuesta));
 				if (err == -1) {
 					printf("s> Error en el envío del id del mensaje al cliente\n");
 				}
@@ -370,7 +387,7 @@ void tratar_mensaje(int *cliente){
 			
 			break;
 
-        case "CONNECTEDUSERS":		//Lista de usuarios conectados
+        case 5:		//Lista de usuarios conectados
 
 			respuesta = usuarios_conectados(sc);
 
