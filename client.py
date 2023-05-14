@@ -25,8 +25,9 @@ class client :
     _username = None
     _alias = None
     _date = None
+    _thread = None
 
-    estado_thread = 1
+    estado_thread = 1       # Nos indica si el thread creado tiene que seguir esperando mensajes del servidor
 
     # ******************** METHODS *******************
     # *
@@ -169,12 +170,12 @@ class client :
             window["_SERVER_"].print("CONNECT OK")
             
             # Creamos un hilo para recibir los mensajes del servidor
-            #Para identificar correctamente al hilo lo llamaremos con el alias del usuario, parámetro único que lo identifica
-            nombre_hilo = client._alias + "_thread"
 
             #********CONECTARSE AL THEAD********
-            thread = threading.Thread(target=client.receiveMessages, args=(connection, window), name=nombre_hilo)
+            client._thread = threading.Thread(target=client.receiveMessages, args=(socket_client, window))
 
+            # Iniciamos el thread
+            client._thread.start()
 
         elif(respuesta == 1):
             window["_SERVER_"].print("CONNECT FAIL, USER DOES NOT EXIST")
@@ -190,16 +191,16 @@ class client :
     # * @param connection - Connection socket
     # *
     # * Función que se encarga de escuchar al servidor para recibir los mensajes
-    """
+    
     @staticmethod
-    def receiveMessages(connection, window):
+    def receiveMessages(socket, window):
         estado_thread = 1
         while estado_thread: 
             # Recibimos el mensaje del servidor
-            mensaje = client.readString(connection)
+            mensaje = client.readString(socket)
             mensaje = mensaje.split("\0")
             window["_SERVER_"].print(mensaje)
-    """
+
     
 
 
@@ -302,7 +303,8 @@ class client :
             id_mensaje = client.readString(connection)
             id_mensaje = int(id_mensaje)
 
-            window["_SERVER_"].print("s> SEND OK - MESSAGE " + id_mensaje)
+            if(id_mensaje != -1):           # Si es distinto de -1 significa que el mensaje se ha enviado en ese momento
+                window["_SERVER_"].print("s> SEND OK - MESSAGE " + id_mensaje)
             
         elif(respuesta == 1):
             window["_SERVER_"].print("s> SEND FAIL / USER DOES NOT EXIST")
