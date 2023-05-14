@@ -298,13 +298,15 @@ void tratar_mensaje(int *cliente){
 			if (err == -1) {
 				printf("s> Error en el envío de la respuesta al cliente\n");
 			}
-
+			
+			/*
 			if(respuesta == 0){
 				// Enviamos los mensajes pendientes si hay
 				if (mensajes_pendientes(alias, puerto, ip_cliente) == -1) {
 					printf("s> Error al enviar los mensajes pendientes\n");
 				}
 			}
+			*/
 
 			close(sc);
 			
@@ -318,7 +320,6 @@ void tratar_mensaje(int *cliente){
 				printf("s> Error en recepcion\n");
 			}
 			strcpy(alias, buffer);
-
 			//Desconectar al usuario
 			respuesta = desconectar(alias);
 

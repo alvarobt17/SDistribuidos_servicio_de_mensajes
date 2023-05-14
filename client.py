@@ -196,12 +196,19 @@ class client :
     def receiveMessages(socket, window):
         estado_thread = 1
         while estado_thread: 
-            # Recibimos el mensaje del servidor
-            mensaje = client.readString(socket)
+            # Esperamos a que se conecten al socket
+            socket.listen(1)
+            # Aceptamos la conexión
+            conn= socket.accept()
+            # Recibimos el mensaje
+            mensaje = client.readString(conn)
+            
+
+    """
+    mensaje = client.readString(socket)
             mensaje = mensaje.split("\0")
             window["_SERVER_"].print(mensaje)
-
-    
+    """
 
 
     # *
