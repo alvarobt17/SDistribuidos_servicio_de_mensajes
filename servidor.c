@@ -158,7 +158,7 @@ void tratar_mensaje(int *cliente){
 
 	if(strcmp(operacion, "REGISTER") == 0){
 		tipo_op = 0;
-	}else if(strcmp(operacion, "UNREGISTERED") == 0){
+	}else if(strcmp(operacion, "UNREGISTER") == 0){
 		tipo_op = 1;
 	}else if(strcmp(operacion, "CONNECT") == 0){
 		tipo_op = 2;

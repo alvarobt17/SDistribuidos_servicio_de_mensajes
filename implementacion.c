@@ -94,13 +94,21 @@ int conectar(char alias[MAX_SIZE], int puerto, char ip[MAX_SIZE]){
     fprintf(fichero, "%d\n%d\n%s", 1, puerto, ip);
 
     fclose(fichero);
-
+    
     // INCLUIMOS AL USUARIO EN CONNECTED_USERS
 
-    sprintf(nombre_fichero, "connected_users.txt");
+    sprintf(nombre_fichero, "datos/connected_users.txt");
 
-    fichero = fopen(nombre_fichero, "r+");
+    fichero = fopen(nombre_fichero, "w+");
     if(fichero == NULL){
+        // Error al abrir el archivo
+        return 3;
+    }
+
+    // Comprobamos si acabamos de crear el fichero
+    fseek(fichero, 0, SEEK_END);  
+    long tamaño = ftell(fichero);
+    if (tamaño == 0){
         // Escribimos en la primera línea 0, número usuarios conectados
         fprintf(fichero, "%d\n", 0);
     }
