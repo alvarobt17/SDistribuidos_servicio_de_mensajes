@@ -238,6 +238,8 @@ void tratar_mensaje(int *cliente){
 				printf("s> UNREGISTER %s FAIL\n", alias);
 			}
 
+			sprintf(str_respuesta, "%d", respuesta);
+			printf("e> Respuesta desconectar servidor: %s\n", str_respuesta);
 			//Enviamos respuesta al cliente
 			err = sendMessage(sc, str_respuesta, strlen(str_respuesta)+1);
 			if (err == -1) {

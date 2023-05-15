@@ -154,6 +154,7 @@ int desconectar(char alias[MAX_SIZE]){
     fichero = fopen(nombre_fichero, "r+");
     if(fichero == NULL){
         // El usuario no existe
+        
         fclose(fichero);
         return 1;           // USER DOES NOT EXIT
     }
@@ -168,7 +169,7 @@ int desconectar(char alias[MAX_SIZE]){
             return 3;           // DISCONNECTED ERROR
         }
     }
-    
+
     // Comprobamos que el usuario no esté ya desconectado
     int cont = atoi(buffer);
     if(cont == 0){
@@ -178,14 +179,42 @@ int desconectar(char alias[MAX_SIZE]){
     }
 
     // Cambiamos el estado del usuario a desconectado y borramos el puerto y la ip
-    fseek(fichero, -2, SEEK_CUR);
-    fprintf(fichero, "%d\n%s\n%s", 0, "NULL", "NULL");
+    // Creamos un fichero temporal para guardar los datos
+    FILE *fichero_temp;
+    char nombre_fichero_temp[MAX_SIZE];
+    sprintf(nombre_fichero_temp, "datos/%s_aux.txt", alias);
 
+    fichero_temp = fopen(nombre_fichero_temp, "w+");
+    if(fichero_temp == NULL){
+        // Error al abrir el archivo
+        fclose(fichero);
+        return 3;
+    }
+
+    // Copiamos los datos del fichero original (usuario, alias y fecha) al temporal
+    fseek(fichero, 0, SEEK_SET);
+
+    for(int i = 0; i < 3; i++){
+        if(fgets(buffer, TAM_BUFFER, fichero) == NULL){
+            // Error al leer el fichero
+            fclose(fichero);
+            fclose(fichero_temp);
+            return 3;
+        }
+        fprintf(fichero_temp, "%s", buffer);
+    }
+
+    fprintf(fichero_temp, "%d\n%s\n%s", 0, "NULL", "NULL");
+
+    // Borramos el fichero original y cambiamos de nombre al temporal
     fclose(fichero);
+    remove(nombre_fichero);
+    rename(nombre_fichero_temp, nombre_fichero);
+    fclose(fichero_temp);
 
     // ELIMINAR AL USUARIO DE CONNECTED_USERS
 
-    sprintf(nombre_fichero, "connected_users.txt");
+    sprintf(nombre_fichero, "datos/connected_users.txt");
 
     fichero = fopen(nombre_fichero, "r+");
     if(fichero == NULL){

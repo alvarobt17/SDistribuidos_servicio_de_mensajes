@@ -156,9 +156,9 @@ class client :
         # Creamos un socket para el thread con el primer puerto libre
         socket_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         socket_client.bind(('', 0))  # Especifica una dirección IP vacía (localhost) y un puerto 0 para obtener un puerto disponible automáticamente
-        client._port = socket_client.getsockname()[1]
+        puerto_escucha = socket_client.getsockname()[1]
 
-        mensaje = str(client._port)
+        mensaje = str(puerto_escucha)
         mensaje = mensaje + "\0"
         connection.sendall(mensaje.encode())
 
@@ -170,12 +170,12 @@ class client :
             window["_SERVER_"].print("CONNECT OK")
             
             # Creamos un hilo para recibir los mensajes del servidor
-
-            #********CONECTARSE AL THEAD********
             client._thread = threading.Thread(target=client.receiveMessages, args=(socket_client, window))
 
             # Iniciamos el thread
             client._thread.start()
+            #********CONECTARSE AL THEAD********
+            
 
         elif(respuesta == 1):
             window["_SERVER_"].print("CONNECT FAIL, USER DOES NOT EXIST")
@@ -194,10 +194,11 @@ class client :
     
     @staticmethod
     def receiveMessages(socket, window):
-        estado_thread = 1
-        while estado_thread: 
-            # Esperamos a que se conecten al socket
-            socket.listen(1)
+        # El sockect se queda escuchando al servidor
+        socket.listen(1)
+
+        client._estado_thread = 1
+        while client._estado_thread: 
             # Aceptamos la conexión
             conn= socket.accept()
             # Recibimos el mensaje
@@ -234,6 +235,9 @@ class client :
         mensaje = mensaje + "\0"
         connection.sendall(mensaje.encode())
 
+
+        # PUEDE QUE EN LA LÍNEA DE DEBAJO HAYA ALGUN FALLO
+        
         # Recibimos la respuesta del servidor
         respuesta = client.readString(connection)
         respuesta = int(respuesta)
