@@ -598,9 +598,8 @@ int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){ 
                 }
 
                 // Enviamos el mensaje
-                //Borramos el salto de línea del final
-                mensaje[strlen(mensaje)-1] = '\0';
 
+                mensaje[strlen(mensaje)-1] = '\0';
                 if(sendMessage(sock_destino, mensaje, strlen(mensaje)+1) == -1){
                     printf("s> Error al enviar el mensaje\n");
                     fclose(fichero);
@@ -608,6 +607,11 @@ int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){ 
                 }
 
                 printf("s> SEND MESSAGE %d FROM %s TO %s STORED\n", id, usuario, destino);
+
+                close(sock_destino);
+
+
+
 
                 //CONFIRMACIÓN DEL MENSAJE
 
@@ -632,7 +636,7 @@ int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){ 
                 for(int i = 0; i < 4; i++){
                     if(fgets(buffer, TAM_BUFFER, fichero_usuario) == NULL){
                         // Error al leer el fichero
-                        fclose(fichero);
+                        fclose(fichero_usuario);
                         return 1;
                     }
                 }
@@ -645,7 +649,7 @@ int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){ 
                     // Leemos la 5 línea para ver el puerto del usuario
                     if(fgets(buffer, TAM_BUFFER, fichero_usuario) == NULL){
                         // Error al leer el fichero
-                        fclose(fichero);
+                        fclose(fichero_usuario);
                         return 1;
                     }
 
@@ -654,7 +658,7 @@ int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){ 
                     // Leemos la 6 línea para ver la ip del usuario
                     if(fgets(buffer, TAM_BUFFER, fichero_usuario) == NULL){
                         // Error al leer el fichero
-                        fclose(fichero);
+                        fclose(fichero_usuario);
                         return 1;
                     }
                     char ip[TAM_BUFFER];
@@ -664,7 +668,7 @@ int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){ 
                     int smens;
                     if((smens = socket(AF_INET, SOCK_STREAM, 0)) < 0){
                         printf("s> Error al crear el socket\n");
-                        fclose(fichero);
+                        fclose(fichero_usuario);
                         return 1;
                     }
 
@@ -676,7 +680,7 @@ int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){ 
                     if(connect(smens, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0){
                         printf("s> Error al conectar con el usuario\n");
                         error_enviar_mensaje(alias, destino, mensaje, id);
-                        fclose(fichero);
+                        fclose(fichero_usuario);
                         return 1;
                     }
 
@@ -685,7 +689,7 @@ int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){ 
                     if(sendMessage(smens, tipo_op, strlen(tipo_op)+1) == -1){
                         printf("s> Error al enviar el código de la operación\n");
                         error_enviar_mensaje(alias, destino, mensaje, id);
-                        fclose(fichero);
+                        fclose(fichero_usuario);
                         return 1;
                     }
 
@@ -695,29 +699,35 @@ int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){ 
                     if(sendMessage(smens, envio, strlen(envio)+1) == -1){
                         printf("s> Error al enviar el identificador del mensaje\n");
                         error_enviar_mensaje(alias, destino, mensaje, id);
-                        fclose(fichero);
+                        fclose(fichero_usuario);
                         return 1;
                     }
 
-                }else{      //El usuario no está conectad0
+                }else{      //El usuario no está conectado
+
+                    printf("e> USUARIO RECIBO DESCONECTADO\n");
+                    fclose(fichero_usuario);
                     //Guardamos el mensaje de confirmación en el fichero de mensajes pendientes
-                    char mensaje_guardar[MAX_SIZE];
+                    char mensaje_guardar[MAX_SIZE], fich_remitente[TAM_BUFFER];
                     sprintf(mensaje_guardar,"SEND_MESS_ACK;%d", id);
 
                     // Guardamos el mensaje en el fichero de mensajes pendientes y si no existe lo creamos
-                    sprintf(nombre_fichero, "datos/%s_mensajes.txt", usuario);
-                    fichero = fopen(nombre_fichero, "a+");
-                    if(fichero == NULL){
+                    sprintf(fich_remitente, "datos/%s_mensajes.txt", usuario);
+                    FILE *fichero_mensajes;
+                    fichero_mensajes = fopen(fich_remitente, "a+");
+                    if(fichero_mensajes == NULL){
                         // Error al abrir el fichero
-                        fclose(fichero);
+                        fclose(fichero_mensajes);
                         return 1;
                     } 
 
                     //Vamos a la última línea del fichero y escribimos el mensaje nuevo
-                    fseek(fichero, 0, SEEK_END);
-                    fprintf(fichero, "%s\n", mensaje_guardar);
+                    fseek(fichero_mensajes, 0, SEEK_END);
+                    fprintf(fichero_mensajes, "%s\n", mensaje_guardar);
 
-                    fclose(fichero);
+                    fclose(fichero_mensajes);
+
+                    printf("e> completado el guardado\n");
                 }
 
 
@@ -743,14 +753,14 @@ int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){ 
             }
             
             
-
-            // AHGIRFOEDWIJPOK`VJFIHBDUFIFOJDMCOSFDGOFJOAFNOGUFIJDJR
-            
         }
     }
 
+    printf("e> LLEGA AL FINAL DE LA FUNCIÓN\n");
+
     // Borramos el fichero
     fclose(fichero);
+    printf("e> Nombre del fichero a borrar: %s\n", nombre_fichero);
     if(remove(nombre_fichero) == -1){
         perror("Error al borrar el fichero");
         return -1;
