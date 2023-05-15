@@ -214,17 +214,25 @@ class client :
             print("e> " + mensaje_usuario)
 
             if(mensaje_usuario == "SEND_MESSAGE"):
+                print("e> CONECTADO CON USUARIO")
                 # Recibimos el alias del usuario que envía el mensaje
                 alias = client.readString(conn)
+
+                print("e> alias: "+alias)
 
                 # Recibimos el identificador del mensaje
                 id_mensaje = client.readString(conn)
 
+                print("e> id: "+ id_mensaje)
+
                 # Recibimos el mensaje
                 mensaje = client.readString(conn)
 
+                print("e> mensaje: "+mensaje)
+
                 # Imprimimos por pantalla el mensaje
                 window["_SERVER_"].print("s> MESSAGE " + id_mensaje + " FROM " + alias + "\n" + mensaje + "\nEND")
+                
             elif (mensaje_usuario == "SEND_MESS_ACK"):
                 # Recibimos el identificador del mensaje
                 id_mensaje = client.readString(conn)
@@ -272,7 +280,7 @@ class client :
         if(respuesta == 0):
             window["_SERVER_"].print("DISCONNECT OK")
             
-            # Cerramos el thread, para ello ponemos la variable que controlaba la ejeción del thread a 0
+            # Cerramos el thread, para ello ponemos la variable que controla la ejecución del bucledel thread a 0
             # y forzamos el cierre del socket
             client._estado_thread = 0
             client._socket.close()

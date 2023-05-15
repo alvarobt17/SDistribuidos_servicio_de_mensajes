@@ -249,7 +249,7 @@ void tratar_mensaje(int *cliente){
 			
 			break;
         
-        case 2:				//Conectar con otro usuario
+        case 2:				//Conectarse
 			int puerto;
 
 			//Alias
@@ -285,6 +285,8 @@ void tratar_mensaje(int *cliente){
 			char ip_cliente[MAX_SIZE];
 			inet_ntop(AF_INET, &(client_addr.sin_addr), ip_cliente, MAX_SIZE);
 
+			printf("e> ip del cliente: %s\n", ip_cliente);
+
 			//Conectar al usuario
 			respuesta = conectar(alias, puerto, ip_cliente);
 
@@ -300,14 +302,14 @@ void tratar_mensaje(int *cliente){
 				printf("s> Error en el envío de la respuesta al cliente\n");
 			}
 			
-			/*
+			
 			if(respuesta == 0){
 				// Enviamos los mensajes pendientes si hay
 				if (mensajes_pendientes(alias, puerto, ip_cliente) == -1) {
 					printf("s> Error al enviar los mensajes pendientes\n");
 				}
 			}
-			*/
+			
 
 			close(sc);
 			
