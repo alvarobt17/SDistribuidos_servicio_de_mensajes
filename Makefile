@@ -1,7 +1,7 @@
 BIN_FILES  = servidor
 
 CC = gcc
-CPPFLAGS = -I$(INSTALL_PATH)/include
+CPPFLAGS = -I$(INSTALL_PATH)/include -include lines.h
 CFLAGS = -fPIC -g
 
 LDFLAGS = -L$(INSTALL_PATH)/lib/ -L./

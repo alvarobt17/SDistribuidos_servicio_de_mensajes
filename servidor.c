@@ -239,7 +239,6 @@ void tratar_mensaje(int *cliente){
 			}
 
 			sprintf(str_respuesta, "%d", respuesta);
-			printf("e> Respuesta desconectar servidor: %s\n", str_respuesta);
 			//Enviamos respuesta al cliente
 			err = sendMessage(sc, str_respuesta, strlen(str_respuesta)+1);
 			if (err == -1) {
@@ -395,7 +394,7 @@ void tratar_mensaje(int *cliente){
 			respuesta = usuarios_conectados(sc);
 
 
-			if(respuesta = 0){
+			if(respuesta == 0){
 				printf("s> CONNECTEDUSERS OK\n");
 				
 			}else{

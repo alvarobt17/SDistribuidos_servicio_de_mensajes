@@ -10,6 +10,7 @@
 #include "implementacion.h"
 #include "lines.h"
 
+
 #define TAM_BUFFER 1024
 
 int registrar(char usuario[MAX_SIZE],char alias[MAX_SIZE], char fecha[MAX_SIZE]){
@@ -230,15 +231,13 @@ int desconectar(char alias[MAX_SIZE]){
         fclose(fichero);
         return 1;
     }
-
-    printf("Usuarios conectados: %s\n", buffer);
     int conectado = atoi(buffer);
 
     if(conectado > 0){
         // Creamos un nuevo fichero para ir copiando todos los usuarios menos el que queremos desconectar
         FILE *fichero_aux;
         char nombre_fichero_aux[MAX_SIZE];
-        sprintf(nombre_fichero_aux, "connected_users_aux.txt");
+        sprintf(nombre_fichero_aux, "datos/connected_users_aux.txt");
 
         fichero_aux = fopen(nombre_fichero_aux, "w");
 
@@ -439,26 +438,49 @@ int usuarios_conectados(int sc){
    
     FILE *fichero;
     char nombre_fichero[MAX_SIZE];
-    sprintf(nombre_fichero, "connected_users.txt");
+    sprintf(nombre_fichero, "datos/connected_users.txt");
+
+    int resultado;
 
     fichero = fopen(nombre_fichero, "r");
     if (fichero == NULL) {
-        printf("No se pudo abrir el fichero.\n");
-        return -1;
+        printf("s> No se pudo abrir el fichero.\n");
+        resultado = -1;
+    }else{
+        resultado = 0;
     }
 
     char buffer[TAM_BUFFER];
     fgets(buffer, TAM_BUFFER, fichero);
 
     int num_connect = atoi(buffer);
+    printf("e> Hay %d usuarios conectados\n", num_connect);
 
     if (num_connect <= 0) {
+        fclose(fichero);
+        resultado = -1;
+    }else{
+        resultado = 0;
+    }
+
+    //Enviamos el resultado de la operación (0)
+    char mensaje[MAX_SIZE];
+    sprintf(mensaje, "%d", resultado);
+    if(sendMessage(sc, mensaje, strlen(mensaje)+1) == -1){
+        printf("s> Error al enviar el resultado de la operación");
         fclose(fichero);
         return -1;
     }
 
+    if(resultado == -1){
+        return -1;
+    }
+
     // Enviamos la cantidad de personas conectadas al cliente
-    if(send(sc, &num_connect, sizeof(int), 0) == -1){
+    printf("e> Enviando el número de personas conectadas: %d\n", num_connect);
+    sprintf(mensaje, "%d", num_connect);
+    printf("e> Mensaje: %s\n", mensaje);
+    if(sendMessage(sc, mensaje, strlen(mensaje)+1) == -1){
         printf("s> Error al enviar el número de personas conectadas");
         fclose(fichero);
         return -1;
@@ -466,6 +488,7 @@ int usuarios_conectados(int sc){
 
     int err;
 
+    //Envío de personas conectadas
     while (fgets(buffer, TAM_BUFFER, fichero) != NULL) {
         if (strcmp(buffer, "") != 0) {
             err = sendMessage(sc, buffer, strlen(buffer)+1);
@@ -475,6 +498,8 @@ int usuarios_conectados(int sc){
             }
         }
     }
+
+    printf("e> Se han enviado todas las personas conectadas\n");
 
     fclose(fichero);
 

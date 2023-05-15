@@ -355,20 +355,23 @@ class client :
 
         # Recibimos la respuesta del servidor
         respuesta = client.readString(connection)
+        print("e>"+respuesta)
         respuesta = int(respuesta)
 
         if(respuesta == 0):
             # Recibimos la cantidad de usuarios conectados
             cantidad = client.readString(connection)
+            print("e> respuesta servidor: "+cantidad)
             cantidad = int(cantidad)
 
             if(cantidad > 0):
                 usuarios = client.readString(connection)
-                for i in range(cantidad) - 1:
+                for i in range(cantidad-1):
                     #Recibimos los alias de los usuarios conectados y los vamos guardando en una lista
                     usuarios = "," +  client.readString(connection)
 
-                window["_SERVER_"].print("s> CONNECTED USERS (" + cantidad + " users connected ) OK - " + usuarios)
+                window["_SERVER_"].print("s> CONNECTED USERS (" + str(cantidad) + " users connected ) OK - " + usuarios)
+
             
         elif (respuesta == 1):
             window["_SERVER_"].print("s> CONNECTED USERS FAIL / USER IS NOT CONNECTED")
