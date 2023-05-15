@@ -315,7 +315,7 @@ class client :
             id_mensaje = int(id_mensaje)
 
             if(id_mensaje != -1):           # Si es distinto de -1 significa que el mensaje se ha enviado en ese momento
-                window["_SERVER_"].print("s> SEND OK - MESSAGE " + id_mensaje)
+                window["_SERVER_"].print("s> SEND OK - MESSAGE " + str(id_mensaje))
             
         elif(respuesta == 1):
             window["_SERVER_"].print("s> SEND FAIL / USER DOES NOT EXIST")

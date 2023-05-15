@@ -81,7 +81,7 @@ int conectar(char alias[MAX_SIZE], int puerto, char ip[MAX_SIZE]){
             return 1;
         }
     }
-    
+
     // Comprobamos que el usuario no esté ya conectado
     int conect = atoi(buffer);
     if(conect == 1){
@@ -89,7 +89,6 @@ int conectar(char alias[MAX_SIZE], int puerto, char ip[MAX_SIZE]){
         fclose(fichero);
         return 2;           // USER ALREADY CONNECTED
     }
-
     // Cambiamos el estado del usuario a conectado y incluimos el puerto y la ip
     fseek(fichero, -2, SEEK_CUR);
     fprintf(fichero, "%d\n%d\n%s", 1, puerto, ip);
@@ -100,18 +99,24 @@ int conectar(char alias[MAX_SIZE], int puerto, char ip[MAX_SIZE]){
 
     sprintf(nombre_fichero, "datos/connected_users.txt");
 
-    fichero = fopen(nombre_fichero, "w+");
+    fichero = fopen(nombre_fichero, "r");
     if(fichero == NULL){
-        // Error al abrir el archivo
-        return 3;
+        // El archivo no existe
+        // Creamos el archivo
+        fichero = fopen(nombre_fichero, "w");
+        if (fichero == NULL) {
+            // Error al abrir el archivo
+            return 3;
+        }
+        fprintf(fichero, "%d\n", 0);
+
+        fclose(fichero);
     }
 
-    // Comprobamos si acabamos de crear el fichero
-    fseek(fichero, 0, SEEK_END);  
-    long tamaño = ftell(fichero);
-    if (tamaño == 0){
-        // Escribimos en la primera línea 0, número usuarios conectados
-        fprintf(fichero, "%d\n", 0);
+    fichero = fopen(nombre_fichero, "r+");
+    if (fichero == NULL) {
+        // Error al abrir el archivo
+        return 3;
     }
 
     // Leemos la primera línea para ver el número de usuarios conectados
@@ -121,23 +126,24 @@ int conectar(char alias[MAX_SIZE], int puerto, char ip[MAX_SIZE]){
         fclose(fichero);
         return 1;
     }
-
     int conectado = atoi(buffer);
 
+    printf("e> Usuarios conectados antes: %d\n", conectado);
+    
     conectado++;
 
     // Modificamos los usuarios conectados
     fseek(fichero, 0, SEEK_SET);
-    fprintf(fichero, "%d", conectado);
-
-    for(int i = 0; i < conectado; i++){
+    fprintf(fichero, "%d\n", conectado);
+    printf("e> prueba1\n");
+    for(int i = 0; i < conectado-1; i++){
         if(fgets(buffer, TAM_BUFFER, fichero) == NULL){
             // Error al leer el fichero
             fclose(fichero);
-            return 1;
+            return 3;
         }
     }
-
+    printf("e> prueba2\n");
     // Escribimos el nombre del usuario
     fprintf(fichero, "%s\n", alias);
 
