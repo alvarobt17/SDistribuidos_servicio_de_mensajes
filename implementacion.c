@@ -281,15 +281,16 @@ int desconectar(char alias[MAX_SIZE]){
 }
 
 int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE], int id){
-
-    char mensaje_local[TAM_BUFFER];
-    sprintf(mensaje_local, "%d;%s;%s", id, alias, mensaje);  
+    printf("e> alias: %s\n", alias);
+    printf("e> destino: %s\n", destino);
+    printf("e> mensaje: %s\n", mensaje);
+    char mensaje_local[TAM_BUFFER]; 
 
     //Comprobamos si el usuario está conectado
     FILE *fichero;
     char nombre_fichero[MAX_SIZE];
     sprintf(nombre_fichero, "datos/%s.txt", destino);
-
+    printf("e> destino: %s\n", destino);
     fichero = fopen(nombre_fichero, "r+");
     if(fichero == NULL){
         // El usuario no existe
@@ -314,6 +315,8 @@ int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE],
         // El usuario no está conectado, guardamos el mensaje para enviarlo cuando se conecte
         fclose(fichero);
 
+        sprintf(mensaje_local, "%d;%s;%s", id, alias, mensaje); 
+
         // Guardamos el mensaje en el fichero de mensajes pendientes y si no existe lo creamos
         sprintf(nombre_fichero, "datos/%s_mensajes.txt", alias);
         fichero = fopen(nombre_fichero, "a+");
@@ -332,6 +335,7 @@ int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE],
         fclose(fichero);
 
     }else{          //Usuario conectado en este momento
+        printf("e> USUARIO CONECTADO\n");
         // Leemos la 5 línea para ver el puerto del usuario
         if(fgets(buffer, TAM_BUFFER, fichero) == NULL){
             // Error al leer el fichero
@@ -352,8 +356,8 @@ int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE],
         strcpy(ip, buffer);
 
         // Enviamos el mensaje al usuario
-        int sc;
-        if((sc = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+        int smens;
+        if((smens = socket(AF_INET, SOCK_STREAM, 0)) < 0){
             printf("s> Error al crear el socket\n");
             fclose(fichero);
             return 1;
@@ -364,7 +368,7 @@ int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE],
         server_addr.sin_port = htons(puerto);
         server_addr.sin_addr.s_addr = inet_addr(ip);
 
-        if(connect(sc, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0){
+        if(connect(smens, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0){
             printf("s> Error al conectar con el usuario\n");
             error_enviar_mensaje(alias, destino, mensaje, id);
             fclose(fichero);
@@ -372,16 +376,19 @@ int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE],
         }
 
         // Enviamos el código de la operación
-        char operacion[] = "SEND_MESSAGE";
-        if(sendMessage(sc, operacion, strlen(operacion)) == -1){
+        char operacion[MAX_SIZE];
+        sprintf(operacion, "%s", "SEND_MESSAGE");
+        if(sendMessage(smens, operacion, strlen(operacion)+1) == -1){
             printf("s> Error al enviar el código de la operación\n");
             error_enviar_mensaje(alias, destino, mensaje, id);
             fclose(fichero);
             return 1;
         }
 
+        printf("e> codigo de operacion: %s\n", operacion);
+
         // Enviamos el alias del usuario que envíe el mensaje
-        if(sendMessage(sc, alias, strlen(alias)) == -1){
+        if(sendMessage(smens, alias, strlen(alias)+1) == -1){
             printf("s> Error al enviar el alias del usuario\n");
             error_enviar_mensaje(alias, destino, mensaje, id);
             fclose(fichero);
@@ -389,17 +396,18 @@ int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE],
         }
 
         // Enviamos el identificador del mensaje
-        char mensaje[MAX_SIZE];
-        sprintf(mensaje, "%d", id);
-        if(sendMessage(sc,mensaje, sizeof(mensaje)) == -1){
+        char enviar[MAX_SIZE];
+        sprintf(enviar, "%d", id);
+        if(sendMessage(smens,enviar, strlen(enviar)+1) == -1){
             printf("s> Error al enviar el identificador del mensaje\n");
             error_enviar_mensaje(alias, destino, mensaje, id);
             fclose(fichero);
             return 1;
         }
 
+        printf("e> Mensaje: %s\n", mensaje);
         // Enviamos el mensaje
-        if(sendMessage(sc, mensaje, strlen(mensaje)) == -1){
+        if(sendMessage(smens, mensaje, strlen(mensaje)+1) == -1){
             printf("s> Error al enviar el mensaje\n");
             error_enviar_mensaje(alias, destino, mensaje, id);
             fclose(fichero);
@@ -409,7 +417,7 @@ int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE],
         printf("s> SEND MESSAGE %d FROM %s TO %s\n", id, alias, destino);
 
         fclose(fichero);
-        close(sc);
+        close(smens);
     }
 
     return 0;

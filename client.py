@@ -192,6 +192,7 @@ class client :
     # *
     # * Función que se encarga de escuchar al servidor para recibir los mensajes
     
+
     @staticmethod
     def receiveMessages(socket, window):
         # El sockect se queda escuchando al servidor
@@ -200,10 +201,29 @@ class client :
         client._estado_thread = 1
         while client._estado_thread: 
             # Aceptamos la conexión
-            conn= socket.accept()
-            # Recibimos el mensaje
-            mensaje = client.readString(conn)
+            conn, addr = socket.accept()
+            # Recibimos el código de operación
+            mensaje_usuario = client.readString(conn)
+            # Pasamos de una lista a un string
+            mensaje_usuario = "".join(mensaje_usuario)
+
+            print("e> " + mensaje_usuario)
+
+            if(mensaje_usuario == "SEND_MESSAGE"):
+                # Recibimos el alias del usuario que envía el mensaje
+                alias = client.readString(conn)
+
+                # Recibimos el identificador del mensaje
+                id_mensaje = client.readString(conn)
+
+                # Recibimos el mensaje
+                mensaje = client.readString(conn)
+
+                # Imprimimos por pantalla el mensaje
+                window["_SERVER_"].print("s> MESSAGE " + id_mensaje + " FROM " + alias + "\n" + mensaje + "\nEND")
+
             
+   
 
     """
     mensaje = client.readString(socket)
@@ -291,7 +311,7 @@ class client :
         connection.sendall(mensaje.encode())
 
         # Usuario destino
-        mensaje = client._alias
+        mensaje = user
         mensaje = mensaje + "\0"
         connection.sendall(mensaje.encode())
 

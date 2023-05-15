@@ -349,6 +349,7 @@ void tratar_mensaje(int *cliente){
 				printf("s> Error en recepcion\n");
 			}
 			strcpy(alias, buffer);
+			printf("s> Alias_server: %s\n", alias);
 
 			//Usuario destino
 			err = readLine(sc, buffer, TAM_BUFFER+1);
@@ -356,6 +357,7 @@ void tratar_mensaje(int *cliente){
 				printf("s> Error en recepcion\n");
 			}
 			strcpy(destino, buffer);
+			printf("s> Destino_server: %s\n", destino);
 
 			//Mensaje
 			err = readLine(sc, buffer, TAM_BUFFER+1);
