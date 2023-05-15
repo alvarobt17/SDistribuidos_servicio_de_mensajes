@@ -366,11 +366,13 @@ class client :
 
             if(cantidad > 0):
                 usuarios = client.readString(connection)
+                usuarios = usuarios.strip()
                 for i in range(cantidad-1):
                     #Recibimos los alias de los usuarios conectados y los vamos guardando en una lista
-                    usuarios = "," +  client.readString(connection)
+                    alias = client.readString(connection)
+                    usuarios = "".join([usuarios, ",", alias.strip()])
 
-                window["_SERVER_"].print("s> CONNECTED USERS (" + str(cantidad) + " users connected ) OK - " + usuarios)
+                window["_SERVER_"].print("s> CONNECTED USERS ( " + str(cantidad) + " users connected ) OK - " + usuarios)
 
             
         elif (respuesta == 1):
