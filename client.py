@@ -26,6 +26,7 @@ class client :
     _alias = None
     _date = None
     _thread = None
+    _socket = None
 
     estado_thread = 1       # Nos indica si el thread creado tiene que seguir esperando mensajes del servidor
 
@@ -158,6 +159,9 @@ class client :
         socket_client.bind(('', 0))  # Especifica una dirección IP vacía (localhost) y un puerto 0 para obtener un puerto disponible automáticamente
         puerto_escucha = socket_client.getsockname()[1]
 
+        # Guardamos el socket
+        client._socket = socket_client
+
         mensaje = str(puerto_escucha)
         mensaje = mensaje + "\0"
         connection.sendall(mensaje.encode())
@@ -221,6 +225,12 @@ class client :
 
                 # Imprimimos por pantalla el mensaje
                 window["_SERVER_"].print("s> MESSAGE " + id_mensaje + " FROM " + alias + "\n" + mensaje + "\nEND")
+            elif (mensaje_usuario == "SEND_MESS_ACK"):
+                # Recibimos el identificador del mensaje
+                id_mensaje = client.readString(conn)
+
+                # Imprimimos por pantalla el mensaje
+                window["_SERVER_"].print("s> SEND MESSAGE " + id_mensaje + " OK")
 
             
    
@@ -254,9 +264,6 @@ class client :
         mensaje = client._alias
         mensaje = mensaje + "\0"
         connection.sendall(mensaje.encode())
-
-
-        # PUEDE QUE EN LA LÍNEA DE DEBAJO HAYA ALGUN FALLO
         
         # Recibimos la respuesta del servidor
         respuesta = client.readString(connection)
@@ -265,14 +272,10 @@ class client :
         if(respuesta == 0):
             window["_SERVER_"].print("DISCONNECT OK")
             
-            #********DESCONECTARSE DEL THEAD********
-            nombre_hilo = client._alias + "_thread"
-            # Paramos el thread (join)
-            estado_thread = 0
-            #thread.join()
-
-
-
+            # Cerramos el thread, para ello ponemos la variable que controlaba la ejeción del thread a 0
+            # y forzamos el cierre del socket
+            client._estado_thread = 0
+            client._socket.close()
             
         elif(respuesta == 1):
             window["_SERVER_"].print("DISCONNECT FAIL / USER DOES NOT EXIST")
