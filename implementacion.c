@@ -521,28 +521,6 @@ int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE],
 
 }
 
-int error_enviar_mensaje(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE], int id){
-    desconectar(destino);
-
-    //Agregamos el mensaje a la lista de mensajes pendientes
-    char nombre_fichero[MAX_SIZE];
-    sprintf(nombre_fichero, "datos/%s_mensajes.txt", destino);
-    FILE *fichero = fopen(nombre_fichero, "a+");
-    if(fichero == NULL){
-        // Error al abrir el fichero
-        fclose(fichero);
-        return 1;
-    }
-
-    //Vamos a la última línea del fichero y escribimos el mensaje nuevo
-    fseek(fichero, 0, SEEK_END);
-    fprintf(fichero, "SEND_MESSAGE;%d;%s;%s\n", id, alias, mensaje);
-
-
-    fclose(fichero);
-
-    return 0;
-}
 
 int usuarios_conectados(int sc){
    
