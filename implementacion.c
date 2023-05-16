@@ -434,7 +434,7 @@ int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE],
 
         // Comprobamos si el usuario está conectado
         int conectado = atoi(buffer);
-        if(conectado == 1){
+        if(conectado == 1){             //Usuario conectado actualmente
 
             // Leemos la 5 línea para ver el puerto del usuario
             if(fgets(buffer, TAM_BUFFER, fichero) == NULL){
@@ -494,6 +494,25 @@ int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE],
 
             fclose(fichero);
             close(smens);
+        }else{      // El usuario no está conectado actualmente
+            // Guardamos el mensjaje de confirmación
+            sprintf(mensaje_local, "SEND_MESS_ACK;%d", id); 
+
+            // Guardamos el mensaje en el fichero de mensajes pendientes y si no existe lo creamos
+            sprintf(nombre_fichero, "datos/%s_mensajes.txt", alias);
+            fichero = fopen(nombre_fichero, "a+");
+            if(fichero == NULL){
+                // Error al abrir el fichero
+                fclose(fichero);
+                return 1;
+            } 
+
+            //Vamos a la última línea del fichero y escribimos el mensaje nuevo
+            fseek(fichero, 0, SEEK_END);
+            fprintf(fichero, "%s\n", mensaje_local);
+
+            fclose(fichero);
+
         }
 
     }
