@@ -55,7 +55,7 @@ int baja(char alias[MAX_SIZE]){
 
     // Comprobamos que el usuario no está conectado 
     desconectar(alias);
-    
+
     // Borramos el fichero
     fclose(fichero);
     if(remove(nombre_fichero) == -1){
@@ -408,6 +408,94 @@ int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE],
 
         fclose(fichero);
         close(smens);
+
+        //Enviamos confirmación al usuario que envió el mensaje
+        //Comprobamos si el usuario está conectado
+        FILE *fichero;
+        char nombre_fichero[MAX_SIZE];
+        sprintf(nombre_fichero, "datos/%s.txt", alias);
+        fichero = fopen(nombre_fichero, "r+");
+        if(fichero == NULL){
+            // El usuario no existe
+            fclose(fichero);
+            return 1;           // USER DOES NOT EXIT
+        }
+
+        // Leemos la 4 línea para ver el estado del usuario
+        char buffer[TAM_BUFFER];
+        int contandor = 1;
+        for(int i = 0; i < 4; i++){
+            if(fgets(buffer, TAM_BUFFER, fichero) == NULL){
+                // Error al leer el fichero
+                fclose(fichero);
+                return 1;
+            }
+        }
+
+        // Comprobamos si el usuario está conectado
+        int conectado = atoi(buffer);
+        if(conectado == 1){
+
+            // Leemos la 5 línea para ver el puerto del usuario
+            if(fgets(buffer, TAM_BUFFER, fichero) == NULL){
+                // Error al leer el fichero
+                fclose(fichero);
+                return 1;
+            }
+
+            int puerto = atoi(buffer);
+
+            // Leemos la 6 línea para ver la ip del usuario
+            if(fgets(buffer, TAM_BUFFER, fichero) == NULL){
+                // Error al leer el fichero
+                fclose(fichero);
+                return 1;
+            }
+
+            char ip[TAM_BUFFER];
+            strcpy(ip, buffer);
+
+            // Enviamos el mensaje al usuario
+            int smens;
+            if((smens = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+                printf("s> Error al crear el socket\n");
+                fclose(fichero);
+                return 1;
+            }
+
+            struct sockaddr_in server_addr;
+            server_addr.sin_family = AF_INET;
+            server_addr.sin_port = htons(puerto);
+            server_addr.sin_addr.s_addr = inet_addr(ip);
+
+            if(connect(smens, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0){
+                printf("s> Error al conectar con el usuario\n");
+                fclose(fichero);
+                return 1;
+            }
+
+            // Enviamos el código de la operación
+            char operacion[MAX_SIZE];
+            sprintf(operacion, "%s", "SEND_MESS_ACK");
+            if(sendMessage(smens, operacion, strlen(operacion)+1) == -1){
+                printf("s> Error al enviar el código de la operación\n");
+                fclose(fichero);
+                return 1;
+            }
+
+            // Enviamos el identificador del mensaje
+            char enviar[MAX_SIZE];
+            sprintf(enviar, "%d", id);
+            if(sendMessage(smens, enviar, strlen(enviar)+1) == -1){
+                printf("s> Error al enviar el alias del usuario\n");
+                fclose(fichero);
+                return 1;
+            }
+
+            fclose(fichero);
+            close(smens);
+        }
+
     }
 
     return 0;

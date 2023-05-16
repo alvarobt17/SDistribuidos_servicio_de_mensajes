@@ -257,7 +257,7 @@ void tratar_mensaje(int *cliente){
 			
 			break;
         
-        case 2:				//Conectarse
+        case 2:				//Conectar usuario
 
 			//Alias
 			err = readLine(sc, buffer, TAM_BUFFER+1);
@@ -320,7 +320,7 @@ void tratar_mensaje(int *cliente){
 			
 			break;
 
-        case 3:			//Desconectar de otro usuario
+        case 3:			//Desconectar usuario
 
 			//Alias
 			err = readLine(sc, buffer, TAM_BUFFER+1);
