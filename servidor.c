@@ -1,6 +1,5 @@
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
@@ -250,7 +249,6 @@ void tratar_mensaje(int *cliente){
 			break;
         
         case 2:				//Conectarse
-			int puerto;
 
 			//Alias
 			err = readLine(sc, buffer, TAM_BUFFER+1);
@@ -258,7 +256,7 @@ void tratar_mensaje(int *cliente){
 				printf("s> Error en recepcion\n");
 			}
 			strcpy(alias, buffer);
-
+			int puerto;
 			//Puerto
 			err = readLine(sc, buffer, TAM_BUFFER+1);
 			if (err == -1) {
@@ -284,8 +282,6 @@ void tratar_mensaje(int *cliente){
 
 			char ip_cliente[MAX_SIZE];
 			inet_ntop(AF_INET, &(client_addr.sin_addr), ip_cliente, MAX_SIZE);
-
-			printf("e> ip del cliente: %s\n", ip_cliente);
 
 			//Conectar al usuario
 			respuesta = conectar(alias, puerto, ip_cliente);

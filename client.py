@@ -211,24 +211,15 @@ class client :
             # Pasamos de una lista a un string
             mensaje_usuario = "".join(mensaje_usuario)
 
-            print("e> " + mensaje_usuario)
-
             if(mensaje_usuario == "SEND_MESSAGE"):
-                print("e> CONECTADO CON USUARIO")
                 # Recibimos el alias del usuario que envía el mensaje
                 alias = client.readString(conn)
-
-                print("e> alias: "+alias)
 
                 # Recibimos el identificador del mensaje
                 id_mensaje = client.readString(conn)
 
-                print("e> id: "+ id_mensaje)
-
                 # Recibimos el mensaje
                 mensaje = client.readString(conn)
-
-                print("e> mensaje: "+mensaje)
 
                 # Imprimimos por pantalla el mensaje
                 window["_SERVER_"].print("s> MESSAGE " + id_mensaje + " FROM " + alias + "\n" + mensaje + "\nEND")
@@ -386,24 +377,37 @@ class client :
 
         # Recibimos la respuesta del servidor
         respuesta = client.readString(connection)
-        print("e>"+respuesta)
         respuesta = int(respuesta)
 
         if(respuesta == 0):
             # Recibimos la cantidad de usuarios conectados
             cantidad = client.readString(connection)
-            print("e> respuesta servidor: "+cantidad)
-            cantidad = int(cantidad)
+            cantidad = int(cantidad) -1
+            usuarios = ""
 
             if(cantidad > 0):
                 usuarios = client.readString(connection)
                 usuarios = usuarios.strip()
-                for i in range(cantidad-1):
-                    #Recibimos los alias de los usuarios conectados y los vamos guardando en una lista
-                    alias = client.readString(connection)
-                    usuarios = "".join([usuarios, ",", alias.strip()])
+                if(usuarios == client._alias):
+                    usuarios = ""
+                    if(cantidad > 1):
+                        usuarios = client.readString(connection)
+                        for i in range(cantidad-2):
+                            #Recibimos los alias de los usuarios conectados y los vamos guardando en una lista
+                            alias = client.readString(connection)
+                            alias = alias.strip()
+                            if(alias != client._alias):
+                                usuarios = "".join([usuarios, ",", alias])
+                else:
+                    for i in range(cantidad-1):
+                            #Recibimos los alias de los usuarios conectados y los vamos guardando en una lista
+                            alias = client.readString(connection)
+                            alias = alias.strip()
+                            if(alias != client._alias):
+                                usuarios = "".join([usuarios, ",", alias])
 
-                window["_SERVER_"].print("s> CONNECTED USERS ( " + str(cantidad) + " users connected ) OK - " + usuarios)
+
+            window["_SERVER_"].print("s> CONNECTED USERS ( " + str(cantidad) + " users connected ) OK - " + usuarios)
 
             
         elif (respuesta == 1):

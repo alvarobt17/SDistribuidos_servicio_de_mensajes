@@ -31,7 +31,7 @@ int registrar(char usuario[MAX_SIZE],char alias[MAX_SIZE], char fecha[MAX_SIZE])
     if (fichero == NULL) {
         return 2; // Error al abrir el archivo
     }
-    
+
     //Guardamos los datos del usuario en el fichero
     fprintf(fichero, "%s\n%s\n%s\n%d\n%s\n%s", usuario, alias, fecha, 0, "NULL", "NULL");
     fclose(fichero);
@@ -132,15 +132,12 @@ int conectar(char alias[MAX_SIZE], int puerto, char ip[MAX_SIZE]){
         return 1;
     }
     int conectado = atoi(buffer);
-
-    printf("e> Usuarios conectados antes: %d\n", conectado);
     
     conectado++;
 
     // Modificamos los usuarios conectados
     fseek(fichero, 0, SEEK_SET);
     fprintf(fichero, "%d\n", conectado);
-    printf("e> prueba1\n");
     for(int i = 0; i < conectado-1; i++){
         if(fgets(buffer, TAM_BUFFER, fichero) == NULL){
             // Error al leer el fichero
@@ -148,7 +145,6 @@ int conectar(char alias[MAX_SIZE], int puerto, char ip[MAX_SIZE]){
             return 3;
         }
     }
-    printf("e> prueba2\n");
     // Escribimos el nombre del usuario
     fprintf(fichero, "%s\n", alias);
 
@@ -286,16 +282,12 @@ int desconectar(char alias[MAX_SIZE]){
 }
 
 int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE], int id){
-    printf("e> alias: %s\n", alias);
-    printf("e> destino: %s\n", destino);
-    printf("e> mensaje: %s\n", mensaje);
     char mensaje_local[TAM_BUFFER]; 
 
     //Comprobamos si el usuario está conectado
     FILE *fichero;
     char nombre_fichero[MAX_SIZE];
     sprintf(nombre_fichero, "datos/%s.txt", destino);
-    printf("e> destino: %s\n", destino);
     fichero = fopen(nombre_fichero, "r+");
     if(fichero == NULL){
         // El usuario no existe
@@ -338,7 +330,7 @@ int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE],
         fclose(fichero);
 
     }else{          //Usuario conectado en este momento
-        printf("e> USUARIO CONECTADO\n");
+
         // Leemos la 5 línea para ver el puerto del usuario
         if(fgets(buffer, TAM_BUFFER, fichero) == NULL){
             // Error al leer el fichero
@@ -386,8 +378,6 @@ int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE],
             return 1;
         }
 
-        printf("e> codigo de operacion: %s\n", operacion);
-
         // Enviamos el alias del usuario que envíe el mensaje
         if(sendMessage(smens, alias, strlen(alias)+1) == -1){
             printf("s> Error al enviar el alias del usuario\n");
@@ -404,7 +394,6 @@ int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE],
             return 1;
         }
 
-        printf("e> Mensaje: %s\n", mensaje);
         // Enviamos el mensaje
         if(sendMessage(smens, mensaje, strlen(mensaje)+1) == -1){
             printf("s> Error al enviar el mensaje\n");
@@ -465,7 +454,6 @@ int usuarios_conectados(int sc){
     fgets(buffer, TAM_BUFFER, fichero);
 
     int num_connect = atoi(buffer);
-    printf("e> Hay %d usuarios conectados\n", num_connect);
 
     if (num_connect <= 0) {
         fclose(fichero);
@@ -488,9 +476,7 @@ int usuarios_conectados(int sc){
     }
 
     // Enviamos la cantidad de personas conectadas al cliente
-    printf("e> Enviando el número de personas conectadas: %d\n", num_connect);
     sprintf(mensaje, "%d", num_connect);
-    printf("e> Mensaje: %s\n", mensaje);
     if(sendMessage(sc, mensaje, strlen(mensaje)+1) == -1){
         printf("s> Error al enviar el número de personas conectadas");
         fclose(fichero);
@@ -509,8 +495,6 @@ int usuarios_conectados(int sc){
             }
         }
     }
-
-    printf("e> Se han enviado todas las personas conectadas\n");
 
     fclose(fichero);
 
@@ -558,8 +542,6 @@ int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){ 
         token = strtok(NULL, ";");
         int id = atoi(token);
 
-        printf("e> Mensaje-> id %d, tipo_op: %s\n", id, tipo_op);
-
         if(strcmp(tipo_op, "SEND_MESSAGE") == 0){
 
             token = strtok(NULL, ";");
@@ -568,8 +550,6 @@ int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){ 
             token = strtok(NULL, ";");
             char mensaje[MAX_SIZE];
             strcpy(mensaje,token);
-
-            printf("e> Mensaje-> id %d, usuario: %s, mensaje: %s\n", id, usuario, mensaje);
 
             // Enviamos el tipo de operación
             if(sendMessage(sock_destino, tipo_op, strlen(tipo_op)+1) == -1){
@@ -610,18 +590,13 @@ int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){ 
 
             //CONFIRMACIÓN DEL MENSAJE
 
-            printf("e> CONFIRMACIÓN DEL MENSAJE\n");
-
             // Accedemos al fichero del usuario que envió el mensaje
             char fich_usuario[TAM_BUFFER];
             sprintf(fich_usuario, "datos/%s.txt", usuario);
 
-            printf("e> USUARIO: %s\n", fich_usuario);
-
             // Accedemos a su fichero para ver su estado
             FILE *fichero_usuario = fopen(fich_usuario, "r+");
             if(fichero_usuario == NULL){
-                printf("e> El usuario %s no existe\n", usuario);
                 return -1;
             }
             
@@ -637,10 +612,8 @@ int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){ 
             }
 
             int conectado = atoi(buffer);
-            printf("e> ENVIANDO CONFIRMACIÓN, conectado = %d\n", conectado);
 
             if(conectado == 1){     //El usuario está conectado, le enviamos el mensaje de confirmación
-                printf("e> Confirmación a usario conectado\n");
                 // Leemos la 5 línea para ver el puerto del usuario
                 if(fgets(buffer, TAM_BUFFER, fichero_usuario) == NULL){
                     // Error al leer el fichero
@@ -699,13 +672,9 @@ int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){ 
 
                 close(smens);
 
-                printf("e> Prueba 5000\n");
-
             }else{      //El usuario no está conectado
 
                 fclose(fichero_usuario);
-
-                printf("e> USUARIO RECIBO DESCONECTADO\n");
                 //Guardamos el mensaje de confirmación en el fichero de mensajes pendientes
                 char mensaje_guardar[MAX_SIZE], fich_remitente[TAM_BUFFER];
                 sprintf(mensaje_guardar,"SEND_MESS_ACK;%d", id);
@@ -724,8 +693,6 @@ int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){ 
                 fprintf(fichero_mensajes, "%s\n", mensaje_guardar);
 
                 fclose(fichero_mensajes);
-
-                printf("e> completado el guardado\n");
             }
 
 
@@ -794,8 +761,6 @@ int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){ 
         }
     
     }
-
-    printf("e> LLEGA AL FINAL DE LA FUNCIÓN\n");
 
     return 0;
 }
