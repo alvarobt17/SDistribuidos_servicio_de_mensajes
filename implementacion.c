@@ -590,7 +590,7 @@ int usuarios_conectados(int sc){
 
 }
 
-int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){       // NO PROBADA
+int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){     
     FILE *fichero;
     char nombre_fichero[TAM_BUFFER];
     sprintf(nombre_fichero, "datos/%s_mensajes.txt", destino);
@@ -805,12 +805,6 @@ int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){ 
             close(sock_destino);
             
         }
-
-        // Borramos el mensaje del fichero de mensajes pendientes
-        //Creamos un fichero auxiliar para guardar los mensajes que no queremos borrar
-        
-
-        
 
         // Comprobamos si hay más mensajes
         fseek(fichero, 0, SEEK_SET);
