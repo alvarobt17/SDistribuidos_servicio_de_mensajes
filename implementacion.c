@@ -368,7 +368,6 @@ int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE],
 
         if(connect(smens, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0){
             printf("s> Error al conectar con el usuario\n");
-            error_enviar_mensaje(alias, destino, mensaje, id);
             fclose(fichero);
             return 1;
         }
@@ -378,7 +377,6 @@ int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE],
         sprintf(operacion, "%s", "SEND_MESSAGE");
         if(sendMessage(smens, operacion, strlen(operacion)+1) == -1){
             printf("s> Error al enviar el código de la operación\n");
-            error_enviar_mensaje(alias, destino, mensaje, id);
             fclose(fichero);
             return 1;
         }
@@ -388,7 +386,6 @@ int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE],
         // Enviamos el alias del usuario que envíe el mensaje
         if(sendMessage(smens, alias, strlen(alias)+1) == -1){
             printf("s> Error al enviar el alias del usuario\n");
-            error_enviar_mensaje(alias, destino, mensaje, id);
             fclose(fichero);
             return 1;
         }
@@ -398,7 +395,6 @@ int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE],
         sprintf(enviar, "%d", id);
         if(sendMessage(smens,enviar, strlen(enviar)+1) == -1){
             printf("s> Error al enviar el identificador del mensaje\n");
-            error_enviar_mensaje(alias, destino, mensaje, id);
             fclose(fichero);
             return 1;
         }
@@ -407,7 +403,6 @@ int enviar(char alias[MAX_SIZE], char destino[MAX_SIZE], char mensaje[MAX_SIZE],
         // Enviamos el mensaje
         if(sendMessage(smens, mensaje, strlen(mensaje)+1) == -1){
             printf("s> Error al enviar el mensaje\n");
-            error_enviar_mensaje(alias, destino, mensaje, id);
             fclose(fichero);
             return 1;
         }
@@ -522,249 +517,280 @@ int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){ 
     FILE *fichero;
     char nombre_fichero[TAM_BUFFER];
     sprintf(nombre_fichero, "datos/%s_mensajes.txt", destino);
-
-    fichero = fopen(nombre_fichero, "r+");
-    if(fichero == NULL){
-        // No hay mensajes pendientes
-        return 0;
-    }
-
-    // Conectamos el socket mediante la ip y el puerto dados
-    int sock_destino = socket(AF_INET, SOCK_STREAM, 0);
-    if(sock_destino == -1){
-        printf("s> Error al crear el socket");
-        return 1;
-    }
-
-    struct sockaddr_in server;
-    server.sin_family = AF_INET;
-    server.sin_port = htons(puerto);
-    server.sin_addr.s_addr = inet_addr(ip);
-
-    if(connect(sock_destino, (struct sockaddr *)&server, sizeof(server)) == -1){
-        printf("s> Error al conectar el socket\n");
-        return -1;
-    }
-
-
     // Leemos el fichero y enviamos los mensajes
     char buffer[TAM_BUFFER];
     char alias[MAX_SIZE];
 
-    fseek(fichero, 0, SEEK_SET);
-    while(fgets(buffer, TAM_BUFFER, fichero) != NULL){
-        if(strlen(buffer) > 0){
+    while( (fichero = fopen(nombre_fichero, "r+")) != NULL){       //Si existe significa que tenemos mensajes pendientes
+        fseek(fichero, 0, SEEK_SET);
+        fgets(buffer, TAM_BUFFER, fichero);
 
-            // Obtenemos el tipo de mensaje,id, alias y el mensaje a enviar
-            char tipo_op[MAX_SIZE];
-            char *token = strtok(buffer, ";");
-            strcpy(tipo_op, token);
+        //Abrimos el socket para enviar los mensajes 
+
+        // Conectamos el socket mediante la ip y el puerto dados
+        int sock_destino = socket(AF_INET, SOCK_STREAM, 0);
+        if(sock_destino == -1){
+            printf("s> Error al crear el socket");
+            fclose(fichero);
+            return 1;
+        }
+
+        struct sockaddr_in server;
+        server.sin_family = AF_INET;
+        server.sin_port = htons(puerto);
+        server.sin_addr.s_addr = inet_addr(ip);
+
+        if(connect(sock_destino, (struct sockaddr *)&server, sizeof(server)) == -1){
+            printf("s> Error al conectar el socket\n");
+            fclose(fichero);
+            return -1;
+        }
+
+        // Obtenemos el tipo de mensaje,id, alias y el mensaje a enviar
+        char tipo_op[MAX_SIZE];
+        char *token = strtok(buffer, ";");
+        strcpy(tipo_op, token);
+        token = strtok(NULL, ";");
+        int id = atoi(token);
+
+        printf("e> Mensaje-> id %d, tipo_op: %s\n", id, tipo_op);
+
+        if(strcmp(tipo_op, "SEND_MESSAGE") == 0){
+
             token = strtok(NULL, ";");
-            int id = atoi(token);
+            char usuario[MAX_SIZE];
+            strcpy(usuario, token);
+            token = strtok(NULL, ";");
+            char mensaje[MAX_SIZE];
+            strcpy(mensaje,token);
 
-            printf("e> Mensaje-> id %d, tipo_op: %s\n", id, tipo_op);
+            printf("e> Mensaje-> id %d, usuario: %s, mensaje: %s\n", id, usuario, mensaje);
 
-            if(strcmp(tipo_op, "SEND_MESSAGE") == 0){
+            // Enviamos el tipo de operación
+            if(sendMessage(sock_destino, tipo_op, strlen(tipo_op)+1) == -1){
+                printf("s> Error al enviar el tipo de operación");
+                return -1;
+            }
+        
+            // Enviamos el alias del usuario que envió el mensaje
+            if(sendMessage(sock_destino, usuario, strlen(usuario)+1) == -1){
+                printf("s> Error al enviar el alias del usuario\n");
+                fclose(fichero);
+                return 1;
+            }
 
-                token = strtok(NULL, ";");
-                char usuario[MAX_SIZE];
-                strcpy(usuario, token);
-                token = strtok(NULL, ";");
-                char mensaje[MAX_SIZE];
-                strcpy(mensaje,token);
+            // Enviamos el identificador del mensaje
+            char envio[MAX_SIZE];
+            sprintf(envio, "%d", id);
+            if(sendMessage(sock_destino, envio, strlen(envio)+1) == -1){
+                printf("s> Error al enviar el identificador del mensaje\n");
+                fclose(fichero);
+                return 1;
+            }
 
-                printf("e> Mensaje-> id %d, usuario: %s, mensaje: %s\n", id, usuario, mensaje);
+            // Enviamos el mensaje
 
-                // Enviamos el tipo de operación
-                if(sendMessage(sock_destino, tipo_op, strlen(tipo_op)+1) == -1){
-                    printf("s> Error al enviar el tipo de operación");
-                    return -1;
-                }
-            
-                // Enviamos el alias del usuario que envió el mensaje
-                if(sendMessage(sock_destino, usuario, strlen(usuario)+1) == -1){
-                    printf("s> Error al enviar el alias del usuario\n");
-                    fclose(fichero);
-                    return 1;
-                }
-
-                // Enviamos el identificador del mensaje
-                char envio[MAX_SIZE];
-                sprintf(envio, "%d", id);
-                if(sendMessage(sock_destino, envio, strlen(envio)+1) == -1){
-                    printf("s> Error al enviar el identificador del mensaje\n");
-                    fclose(fichero);
-                    return 1;
-                }
-
-                // Enviamos el mensaje
-
-                mensaje[strlen(mensaje)-1] = '\0';
-                if(sendMessage(sock_destino, mensaje, strlen(mensaje)+1) == -1){
-                    printf("s> Error al enviar el mensaje\n");
-                    fclose(fichero);
-                    return 1;
-                }
-
-                printf("s> SEND MESSAGE %d FROM %s TO %s STORED\n", id, usuario, destino);
-
-                close(sock_destino);
+            mensaje[strlen(mensaje)-1] = '\0';
+            if(sendMessage(sock_destino, mensaje, strlen(mensaje)+1) == -1){
+                printf("s> Error al enviar el mensaje\n");
+                fclose(fichero);
+                return 1;
+            }
 
 
+            printf("s> SEND MESSAGE %d FROM %s TO %s STORED\n", id, usuario, destino);
+
+            close(sock_destino);
 
 
-                //CONFIRMACIÓN DEL MENSAJE
+            //CONFIRMACIÓN DEL MENSAJE
 
-                printf("e> CONFIRMACIÓN DEL MENSAJE\n");
+            printf("e> CONFIRMACIÓN DEL MENSAJE\n");
 
-                // Accedemos al fichero del usuario que envió el mensaje
-                char fich_usuario[TAM_BUFFER];
-                sprintf(fich_usuario, "datos/%s.txt", usuario);
+            // Accedemos al fichero del usuario que envió el mensaje
+            char fich_usuario[TAM_BUFFER];
+            sprintf(fich_usuario, "datos/%s.txt", usuario);
 
-                printf("e> USUARIO: %s\n", fich_usuario);
+            printf("e> USUARIO: %s\n", fich_usuario);
 
-                // Accedemos a su fichero para ver su estado
-                FILE *fichero_usuario = fopen(fich_usuario, "r+");
-                if(fichero_usuario == NULL){
-                    printf("s> El usuario %s no está conectado\n", usuario);
-                    return 1;
-                }
-
-                // Leemos la 4 línea para ver el estado del usuario
-                char buffer[TAM_BUFFER];
-                int contandor = 1;
-                for(int i = 0; i < 4; i++){
-                    if(fgets(buffer, TAM_BUFFER, fichero_usuario) == NULL){
-                        // Error al leer el fichero
-                        fclose(fichero_usuario);
-                        return 1;
-                    }
-                }
-
-                int conectado = atoi(buffer);
-                printf("e> ENVIANDO CONFIRMACIÓN, conectado = %d\n", conectado);
-
-                if(conectado == 1){     //El usuario está conectado, le enviamos el mensaje de confirmación
-                    printf("e> Confirmación a usario conectado\n");
-                    // Leemos la 5 línea para ver el puerto del usuario
-                    if(fgets(buffer, TAM_BUFFER, fichero_usuario) == NULL){
-                        // Error al leer el fichero
-                        fclose(fichero_usuario);
-                        return 1;
-                    }
-
-                    int puerto = atoi(buffer);
-
-                    // Leemos la 6 línea para ver la ip del usuario
-                    if(fgets(buffer, TAM_BUFFER, fichero_usuario) == NULL){
-                        // Error al leer el fichero
-                        fclose(fichero_usuario);
-                        return 1;
-                    }
-                    char ip[TAM_BUFFER];
-                    strcpy(ip, buffer);
-
-                    // Enviamos el mensaje al usuario
-                    int smens;
-                    if((smens = socket(AF_INET, SOCK_STREAM, 0)) < 0){
-                        printf("s> Error al crear el socket\n");
-                        fclose(fichero_usuario);
-                        return 1;
-                    }
-
-                    struct sockaddr_in server_addr;
-                    server_addr.sin_family = AF_INET;
-                    server_addr.sin_port = htons(puerto);
-                    server_addr.sin_addr.s_addr = inet_addr(ip);
-
-                    if(connect(smens, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0){
-                        printf("s> Error al conectar con el usuario\n");
-                        error_enviar_mensaje(alias, destino, mensaje, id);
-                        fclose(fichero_usuario);
-                        return 1;
-                    }
-
-                    // Enviamos el código de la operación
-                    sprintf(tipo_op, "SEND_MESS_ACK");
-                    if(sendMessage(smens, tipo_op, strlen(tipo_op)+1) == -1){
-                        printf("s> Error al enviar el código de la operación\n");
-                        error_enviar_mensaje(alias, destino, mensaje, id);
-                        fclose(fichero_usuario);
-                        return 1;
-                    }
-
-                    // Enviamos el identificador
-                    char envio[MAX_SIZE];
-                    sprintf(envio, "%d", id);
-                    if(sendMessage(smens, envio, strlen(envio)+1) == -1){
-                        printf("s> Error al enviar el identificador del mensaje\n");
-                        error_enviar_mensaje(alias, destino, mensaje, id);
-                        fclose(fichero_usuario);
-                        return 1;
-                    }
-
-                }else{      //El usuario no está conectado
-
-                    printf("e> USUARIO RECIBO DESCONECTADO\n");
-                    fclose(fichero_usuario);
-                    //Guardamos el mensaje de confirmación en el fichero de mensajes pendientes
-                    char mensaje_guardar[MAX_SIZE], fich_remitente[TAM_BUFFER];
-                    sprintf(mensaje_guardar,"SEND_MESS_ACK;%d", id);
-
-                    // Guardamos el mensaje en el fichero de mensajes pendientes y si no existe lo creamos
-                    sprintf(fich_remitente, "datos/%s_mensajes.txt", usuario);
-                    FILE *fichero_mensajes;
-                    fichero_mensajes = fopen(fich_remitente, "a+");
-                    if(fichero_mensajes == NULL){
-                        // Error al abrir el fichero
-                        fclose(fichero_mensajes);
-                        return 1;
-                    } 
-
-                    //Vamos a la última línea del fichero y escribimos el mensaje nuevo
-                    fseek(fichero_mensajes, 0, SEEK_END);
-                    fprintf(fichero_mensajes, "%s\n", mensaje_guardar);
-
-                    fclose(fichero_mensajes);
-
-                    printf("e> completado el guardado\n");
-                }
-
-
-
-            }else if(strcmp(tipo_op, "SEND_MESS_ACK") == 0){      //Confirmaciones de mensajes 
-                // Enviamos el tipo de operación
-
-                // Enviamos el tipo de operación
-                if(sendMessage(sock_destino, tipo_op, strlen(tipo_op)+1) == -1){
-                    printf("s> Error al enviar el tipo de operación");
-                    return -1;
-                }
-
-                // Enviamos el identificador del mensaje
-                char envio[MAX_SIZE];
-                sprintf(envio, "%d", id);
-                if(sendMessage(sock_destino, envio, strlen(envio)+1) == -1){
-                    printf("s> Error al enviar el identificador del mensaje\n");
-                    fclose(fichero);
-                    return 1;
-                }
-
+            // Accedemos a su fichero para ver su estado
+            FILE *fichero_usuario = fopen(fich_usuario, "r+");
+            if(fichero_usuario == NULL){
+                printf("e> El usuario %s no existe\n", usuario);
+                return -1;
             }
             
+            // Leemos la 4 línea para ver el estado del usuario
+            char buffer[TAM_BUFFER];
+            int contandor = 1;
+            for(int i = 0; i < 4; i++){
+                if(fgets(buffer, TAM_BUFFER, fichero_usuario) == NULL){
+                    // Error al leer el fichero
+                    fclose(fichero_usuario);
+                    return 1;
+                }
+            }
+
+            int conectado = atoi(buffer);
+            printf("e> ENVIANDO CONFIRMACIÓN, conectado = %d\n", conectado);
+
+            if(conectado == 1){     //El usuario está conectado, le enviamos el mensaje de confirmación
+                printf("e> Confirmación a usario conectado\n");
+                // Leemos la 5 línea para ver el puerto del usuario
+                if(fgets(buffer, TAM_BUFFER, fichero_usuario) == NULL){
+                    // Error al leer el fichero
+                    fclose(fichero_usuario);
+                    return 1;
+                }
+
+                int puerto_usuario = atoi(buffer);
+
+                // Leemos la 6 línea para ver la ip del usuario
+                if(fgets(buffer, TAM_BUFFER, fichero_usuario) == NULL){
+                    // Error al leer el fichero
+                    fclose(fichero_usuario);
+                    return 1;
+                }
+                char ip_usuario[TAM_BUFFER];
+                strcpy(ip_usuario, buffer);
+
+                fclose(fichero_usuario);
+
+                // Enviamos el mensaje al usuario
+                int smens = socket(AF_INET, SOCK_STREAM, 0);
+                if(smens == -1){
+                    printf("s> Error al crear el socket\n");
+                    fclose(fichero_usuario);
+                    return 1;
+                }
+
+                struct sockaddr_in server_addr;
+                server_addr.sin_family = AF_INET;
+                server_addr.sin_port = htons(puerto_usuario);
+                server_addr.sin_addr.s_addr = inet_addr(ip_usuario);
+
+                if(connect(smens, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1){
+                    printf("s> Error al conectar con el usuario\n");
+                    fclose(fichero_usuario);
+                    return -1;
+                }
+    
+                // Enviamos el código de la operación
+                sprintf(tipo_op, "SEND_MESS_ACK");
+                if(sendMessage(smens, tipo_op, strlen(tipo_op)+1) == -1){
+                    printf("s> Error al enviar el código de la operación\n");
+                    fclose(fichero_usuario);
+                    return 1;
+                }
+
+                // Enviamos el identificador
+                char envio[MAX_SIZE];
+                sprintf(envio, "%d", id);
+                if(sendMessage(smens, envio, strlen(envio)+1) == -1){
+                    printf("s> Error al enviar el identificador del mensaje\n");
+                    fclose(fichero_usuario);
+                    return 1;
+                }
+
+                close(smens);
+
+                printf("e> Prueba 5000\n");
+
+            }else{      //El usuario no está conectado
+
+                fclose(fichero_usuario);
+
+                printf("e> USUARIO RECIBO DESCONECTADO\n");
+                //Guardamos el mensaje de confirmación en el fichero de mensajes pendientes
+                char mensaje_guardar[MAX_SIZE], fich_remitente[TAM_BUFFER];
+                sprintf(mensaje_guardar,"SEND_MESS_ACK;%d", id);
+
+                // Guardamos el mensaje en el fichero de mensajes pendientes y si no existe lo creamos
+                sprintf(fich_remitente, "datos/%s_mensajes.txt", usuario);
+                FILE *fichero_mensajes;
+                fichero_mensajes = fopen(fich_remitente, "a+");
+                if(fichero_mensajes == NULL){
+                    // Error al abrir el fichero
+                    return 1;
+                } 
+
+                //Vamos a la última línea del fichero y escribimos el mensaje nuevo
+                fseek(fichero_mensajes, 0, SEEK_END);
+                fprintf(fichero_mensajes, "%s\n", mensaje_guardar);
+
+                fclose(fichero_mensajes);
+
+                printf("e> completado el guardado\n");
+            }
+
+
+
+        }else if(strcmp(tipo_op, "SEND_MESS_ACK") == 0){      //Confirmaciones de mensajes 
+
+            // Enviamos el tipo de operación
+            if(sendMessage(sock_destino, tipo_op, strlen(tipo_op)+1) == -1){
+                printf("s> Error al enviar el tipo de operación");
+                return -1;
+            }
+
+            // Enviamos el identificador del mensaje
+            char envio[MAX_SIZE];
+            sprintf(envio, "%d", id);
+            if(sendMessage(sock_destino, envio, strlen(envio)+1) == -1){
+                printf("s> Error al enviar el identificador del mensaje\n");
+                fclose(fichero);
+                return 1;
+            }
+            
+            close(sock_destino);
             
         }
+
+        // Borramos el mensaje del fichero de mensajes pendientes
+        //Creamos un fichero auxiliar para guardar los mensajes que no queremos borrar
+        
+
+        
+
+        // Comprobamos si hay más mensajes
+        fseek(fichero, 0, SEEK_SET);
+        fgets(buffer, TAM_BUFFER, fichero);     //Línea con el mensaje que acabamos de enviar
+
+        if(fgets(buffer, TAM_BUFFER, fichero) != NULL){
+            
+            FILE *fichero_aux;
+            char nombre_fichero_aux[MAX_SIZE];
+            sprintf(nombre_fichero_aux, "datos/%s_mensajes_aux.txt", destino);
+
+            fichero_aux = fopen(nombre_fichero_aux, "w+");
+            if(fichero_aux == NULL){
+                // Error al abrir el archivo
+                fclose(fichero);
+                return 1;
+            }
+
+            fprintf(fichero_aux, "%s", buffer);
+            // Copiamos los demás mensajes si existen
+            while(fgets(buffer, TAM_BUFFER, fichero) != NULL){
+                fprintf(fichero_aux, "%s", buffer);
+            }
+
+            //Cerramos ficheros
+            fclose(fichero);
+            fclose(fichero_aux); 
+            // Renombramos el fichero auxiliar y borramos el original
+            remove(nombre_fichero);
+            rename(nombre_fichero_aux, nombre_fichero);
+ 
+        }else{
+            fclose(fichero);
+
+            remove(nombre_fichero);
+        }
+    
     }
 
     printf("e> LLEGA AL FINAL DE LA FUNCIÓN\n");
-
-    // Borramos el fichero
-    fclose(fichero);
-    printf("e> Nombre del fichero a borrar: %s\n", nombre_fichero);
-    if(remove(nombre_fichero) == -1){
-        perror("Error al borrar el fichero");
-        return -1;
-    }
 
     return 0;
 }
