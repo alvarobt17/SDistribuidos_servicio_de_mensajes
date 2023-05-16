@@ -21,13 +21,18 @@ int registrar(char usuario[MAX_SIZE],char alias[MAX_SIZE], char fecha[MAX_SIZE])
     char nombre_fichero[MAX_SIZE];
     sprintf(nombre_fichero, "datos/%s.txt", alias);
 
-    fichero = fopen(nombre_fichero, "w");
-    if (fichero == NULL) {
-        // Error al abrir el archivo
-        return 1;
+    fichero = fopen(nombre_fichero, "r");
+    if (fichero != NULL) {
+        fclose(fichero);
+        return 1; // USERNAME IN USE
     }
 
-    // Guardamos los datos del usuario en su fichero
+    fichero = fopen(nombre_fichero, "w");
+    if (fichero == NULL) {
+        return 2; // Error al abrir el archivo
+    }
+    
+    //Guardamos los datos del usuario en el fichero
     fprintf(fichero, "%s\n%s\n%s\n%d\n%s\n%s", usuario, alias, fecha, 0, "NULL", "NULL");
     fclose(fichero);
 
