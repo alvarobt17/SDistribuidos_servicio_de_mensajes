@@ -82,11 +82,11 @@ class client :
         respuesta = int(respuesta)
 
         if(respuesta == 0):
-            window["_SERVER_"].print("REGISTER OK")
+            window["_SERVER_"].print("s> REGISTER OK")
         elif(respuesta == 1):
-            window["_SERVER_"].print("USERNAME IN USE")
+            window["_SERVER_"].print("s> USERNAME IN USE")
         else:
-            window["_SERVER_"].print("REGISTER FAIL") 
+            window["_SERVER_"].print("s> REGISTER FAIL") 
         
         connection.close()
 
@@ -120,11 +120,11 @@ class client :
         respuesta = int(respuesta)
 
         if(respuesta == 0):
-            window["_SERVER_"].print("UNREGISTER OK")
+            window["_SERVER_"].print("s> UNREGISTER OK")
         elif(respuesta == 1):
-            window["_SERVER_"].print("USERNAME DOES NOT EXIST")
+            window["_SERVER_"].print("s> USERNAME DOES NOT EXIST")
         else:
-            window["_SERVER_"].print("UNREGISTER FAIL") 
+            window["_SERVER_"].print("s> UNREGISTER FAIL") 
 
         connection.close()
 
@@ -182,11 +182,11 @@ class client :
             
 
         elif(respuesta == 1):
-            window["_SERVER_"].print("CONNECT FAIL, USER DOES NOT EXIST")
+            window["_SERVER_"].print("s> CONNECT FAIL, USER DOES NOT EXIST")
         elif(respuesta == 2):
-            window["_SERVER_"].print("USER ALREADY CONNECTED")
+            window["_SERVER_"].print("s> USER ALREADY CONNECTED")
         else:
-            window["_SERVER_"].print("CONNECT FAIL")
+            window["_SERVER_"].print("s> CONNECT FAIL")
 
 
         return client.RC.ERROR
@@ -232,13 +232,6 @@ class client :
                 window["_SERVER_"].print("s> SEND MESSAGE " + id_mensaje + " OK")
 
             
-   
-
-    """
-    mensaje = client.readString(socket)
-            mensaje = mensaje.split("\0")
-            window["_SERVER_"].print(mensaje)
-    """
 
 
     # *
@@ -295,7 +288,6 @@ class client :
     # * @return ERROR the user does not exist or another error occurred
     @staticmethod
     def  send(user, message, window):
-        window["_SERVER_"].print("c> SEND " + user + " " + message)
 
         # Nos conectamos al servidor
         connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -392,6 +384,7 @@ class client :
                     usuarios = ""
                     if(cantidad > 1):
                         usuarios = client.readString(connection)
+                        usuarios = usuarios.strip()
                         for i in range(cantidad-2):
                             #Recibimos los alias de los usuarios conectados y los vamos guardando en una lista
                             alias = client.readString(connection)

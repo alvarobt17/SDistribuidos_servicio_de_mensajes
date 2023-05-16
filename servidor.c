@@ -9,6 +9,7 @@
 #include<stdbool.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/stat.h>
 
 
 #include "lines.h"
@@ -40,6 +41,14 @@ int main(int argc, char *argv[]){
 	int puerto = atoi(argv[2]);		//Puerto de escucha del servidor
 
 	printf("s> init server %s:%d\n", IP_SERVER, puerto);
+
+	// Comprobamos que la carpeta datos existe, sino la creamos
+	if (access("datos", F_OK) == -1) {
+		if (mkdir("datos", 0777) == -1) {
+			perror("Error al crear la carpeta datos");
+			exit(1);
+		}
+	}
 
     //Atributos de los threads    
 	pthread_attr_t t_attr;		

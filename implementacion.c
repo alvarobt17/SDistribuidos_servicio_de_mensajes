@@ -53,6 +53,9 @@ int baja(char alias[MAX_SIZE]){
         return 1;           // USER DOES NOT EXIT
     }
 
+    // Comprobamos que el usuario no está conectado 
+    desconectar(alias);
+    
     // Borramos el fichero
     fclose(fichero);
     if(remove(nombre_fichero) == -1){
@@ -761,6 +764,7 @@ int mensajes_pendientes(char destino[MAX_SIZE], int puerto, char ip[MAX_SIZE]){ 
         }
     
     }
+
 
     return 0;
 }
